@@ -14,12 +14,12 @@ public class EncryptionToolProperties {
     private String BCryptSalt;
 
     // ASE密钥
-    private byte[] AESSecretKey;
+    private String AESSecretKey;
 
     // RSA公钥
-    private byte[] RSAPublicKey;
+    private String RSAPublicKey;
 
     // RSA私钥
-    private byte[] RSAPrivateKey;
+    private String RSAPrivateKey;
 
 }

@@ -13,7 +13,11 @@ public class RSASecretKey {
     // 公钥
     private PublicKey publicKey;
 
+    private String publicKeyStr;
+
     // 私钥
     private PrivateKey privateKey;
+
+    private String privateKeyStr;
 
 }

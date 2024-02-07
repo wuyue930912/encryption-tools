@@ -37,28 +37,6 @@ public interface EncryptionService {
     Boolean matchByBCrypt(String str, String encodeStr);
 
     /**
-     * <!-- 生成随机AES密钥 -->
-     * <p>
-     * AES（Advanced Encryption Standard）算法是一种广泛采用的对称密钥加密标准，由美国国家标准与技术研究院（NIST）于2001年正式发布，
-     * 作为DES加密算法的替代方案。AES设计者是比利时密码学家Joan Daemen和Vincent Rijmen，其基础算法被称为Rijndael。
-     *
-     * @param bit   根据你的安全需求，你也可以选择生成128或192或256位的密钥
-     * @return  随机AES密钥
-     */
-    SecretKey generateAESKey(int bit) throws NoSuchAlgorithmException;
-
-    /**
-     * <!-- 将byte[]转换成SecretKey -->
-     * <p>
-     * AES（Advanced Encryption Standard）算法是一种广泛采用的对称密钥加密标准，由美国国家标准与技术研究院（NIST）于2001年正式发布，
-     * 作为DES加密算法的替代方案。AES设计者是比利时密码学家Joan Daemen和Vincent Rijmen，其基础算法被称为Rijndael。
-     *
-     * @param keyMaterial 密钥的byte[]
-     * @return  AES密钥
-     */
-    SecretKey convertAESKey(byte[] keyMaterial) ;
-
-    /**
      * <!-- 使用AES算法对字符串加密 -->
      * <p>
      * AES（Advanced Encryption Standard）算法是一种广泛采用的对称密钥加密标准，由美国国家标准与技术研究院（NIST）于2001年正式发布，
@@ -105,18 +83,6 @@ public interface EncryptionService {
     String decryptByAES(byte[] bytes) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException;
 
     /**
-     * <!-- 生成RSA公钥和私钥 -->
-     *
-     * <p>
-     * RSA加密是一种公钥密码体制，它是目前应用最广泛的非对称加密算法之一。非对称加密意味着加密和解密使用两个不同的密钥，这两个密钥在数学上相关联，
-     * 但不能从一个密钥直接推导出另一个密钥。
-     *
-     * @param keySize   密钥位数
-     * @return  公钥及私钥
-     */
-    RSASecretKey generateRSAKey(Integer keySize) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException;
-
-    /**
      * <!-- 使用RSA公钥加密字符串 -->
      *
      * @param publicKey 公钥
@@ -147,6 +113,34 @@ public interface EncryptionService {
 
     /**
      * <!-- 使用RSA私钥解密 -->
+     *
+     * @param privateKey    私钥
+     * @param encryptedBytes  要解密的数据
+     * @return  解密后的字符串
+     */
+    String decryptByRSA(PrivateKey privateKey, String encryptedBytes) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException;
+
+    /**
+     * <!-- 使用RSA私钥解密 -->
+     *
+     * @param privateKey    私钥
+     * @param encryptedBytes  要解密的数据
+     * @return  解密后的字符串
+     */
+    String decryptByRSA(String privateKey, byte[] encryptedBytes) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException;
+
+    /**
+     * <!-- 使用RSA私钥解密 -->
+     *
+     * @param privateKey    私钥
+     * @param encryptedStr  要解密的数据
+     * @return  解密后的字符串
+     */
+    String decryptByRSA(String privateKey, String encryptedStr) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException;
+
+
+    /**
+     * <!-- 使用RSA私钥解密 -->
      * <p>
      *     不推荐将公钥/私钥保存在配置文件中
      * </p>
@@ -155,6 +149,18 @@ public interface EncryptionService {
      * @return  解密后的字符串
      */
     String decryptByRSA(byte[] encryptedBytes) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException;
+
+    /**
+     * <!-- 使用RSA私钥解密 -->
+     * <p>
+     *     不推荐将公钥/私钥保存在配置文件中
+     * </p>
+     *
+     * @param encryptedStr  要解密的数据
+     * @return  解密后的字符串
+     */
+    String decryptByRSA(String encryptedStr) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException;
+
 
 
 

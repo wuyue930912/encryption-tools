@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.may</groupId>
     <artifactId>encryption-tool</artifactId>
-    <version>1.0.16</version>
+    <version>1.0.17</version>
     <name>encryption-tool</name>
     <description>encryption-tool</description>
     <properties>
@@ -51,10 +51,6 @@
 
     <repositories>
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
             <id>spring</id>
             <url>https://maven.aliyun.com/repository/spring</url>
             <releases>
@@ -66,4 +62,11 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub wuyue930912 Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/wuyue930912/encryption-tools</url>
+        </repository>
+    </distributionManagement>
 </project>
