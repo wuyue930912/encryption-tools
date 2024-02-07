@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 使用者配置的属性
+ * 配置项
  */
 @ConfigurationProperties(prefix = "encryption.tool")
 @Data
