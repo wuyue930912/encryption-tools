@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.may</groupId>
     <artifactId>encryption-tool</artifactId>
-    <version>1.0.17</version>
+    <version>1.0.21</version>
     <name>encryption-tool</name>
     <description>encryption-tool</description>
     <properties>

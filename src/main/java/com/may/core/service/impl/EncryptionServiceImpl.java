@@ -40,42 +40,44 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     @Override
-    public byte[] encryptByAES(SecretKey keyValue, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
+    public String encryptByAES(String keyValue, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance("AES");
         try {
-            cipher.init(Cipher.ENCRYPT_MODE, keyValue);
+            cipher.init(Cipher.ENCRYPT_MODE, SecretKeyUtil.convertAESKey(keyValue));
         } catch (InvalidKeyException e) {
             throw new RuntimeException("AES密钥格式错误");
         }
-        return cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
+        byte[] encryptBytes = cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(encryptBytes);
     }
 
     @Override
-    public byte[] encryptByAES(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
+    public String encryptByAES(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance("AES");
         try {
             cipher.init(Cipher.ENCRYPT_MODE, SecretKeyUtil.convertAESKey(properties.getAESSecretKey()));
         } catch (InvalidKeyException e) {
             throw new RuntimeException("AES密钥格式错误");
         }
-        return cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
+        byte[] encryptBytes = cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(encryptBytes);
     }
 
     @Override
-    public String decryptByAES(SecretKey keyValue, byte[] bytes) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
+    public String decryptByAES(String keyValue, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance("AES");
         // 解密过程
         try {
-            cipher.init(Cipher.DECRYPT_MODE, keyValue);
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeyUtil.convertAESKey(keyValue));
         } catch (InvalidKeyException e) {
             throw new RuntimeException("AES密钥格式错误");
         }
-        byte[] decryptedData = cipher.doFinal(bytes);
+        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(str));
         return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
     @Override
-    public String decryptByAES(byte[] bytes) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
+    public String decryptByAES(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance("AES");
         // 解密过程
         try {
@@ -83,20 +85,25 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (InvalidKeyException e) {
             throw new RuntimeException("AES密钥格式错误");
         }
-        byte[] decryptedData = cipher.doFinal(bytes);
+        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(str));
         return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
     @Override
-    public byte[] encryptByRSA(PublicKey publicKey, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public String encryptByRSA(String publicKeyStr, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException {
         byte[] plaintextBytes = str.getBytes();
         Cipher encryptCipher = Cipher.getInstance("RSA");
+        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+        PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
         encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return encryptCipher.doFinal(plaintextBytes);
+        byte[] encryptBytes =  encryptCipher.doFinal(plaintextBytes);
+        return Base64.getEncoder().encodeToString(encryptBytes);
     }
 
     @Override
-    public byte[] encryptByRSA(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException {
+    public String encryptByRSA(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException {
         // 从使用者配置文件中获取公钥byte[]
         byte[] publicKeyBytes = Base64.getDecoder().decode(properties.getRSAPublicKey());
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -105,30 +112,11 @@ public class EncryptionServiceImpl implements EncryptionService {
         byte[] plaintextBytes = str.getBytes();
         Cipher encryptCipher = Cipher.getInstance("RSA");
         encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return encryptCipher.doFinal(plaintextBytes);
+        byte[] encryptBytes =  encryptCipher.doFinal(plaintextBytes);
+        return Base64.getEncoder().encodeToString(encryptBytes);
     }
 
-    @Override
-    public String decryptByRSA(PrivateKey privateKey, byte[] encryptedBytes) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-        decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
-        return new String(decryptedBytes);
-    }
-
-    @Override
-    public String decryptByRSA(PrivateKey privateKey, String encryptedStr) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-        decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
-        return new String(decryptedBytes);
-    }
-
-    @Override
-    public String decryptByRSA(String privateKey, byte[] encryptedBytes) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
+    private String decrypt(byte[] encryptedBytes, KeyFactory keyFactory, byte[] privateKeyBytes) throws InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
         PrivateKey realKey = keyFactory.generatePrivate(pkcs8KeySpec);
         Cipher decryptCipher = Cipher.getInstance("RSA");
@@ -142,33 +130,7 @@ public class EncryptionServiceImpl implements EncryptionService {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
         byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
-        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-        PrivateKey realKey = keyFactory.generatePrivate(pkcs8KeySpec);
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-        decryptCipher.init(Cipher.DECRYPT_MODE, realKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
-        return new String(decryptedBytes);
-    }
-
-    @Override
-    public String decryptByRSA(byte[] encryptedBytes) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        // 从使用者配置文件中获取私钥byte[]
-        byte[] privateKeyBytes = Base64.getDecoder().decode(properties.getRSAPrivateKey());
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-
-        // 将byte[]转换成PrivateKey
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-        PrivateKey privateKey;
-        try {
-            privateKey = keyFactory.generatePrivate(privateKeySpec);
-        } catch (InvalidKeySpecException e) {
-            throw new RuntimeException(e);
-        }
-        // 通过私钥解密数据
-        decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
-        return new String(decryptedBytes);
+        return decrypt(encryptedBytes, keyFactory, privateKeyBytes);
     }
 
     @Override
@@ -191,5 +153,57 @@ public class EncryptionServiceImpl implements EncryptionService {
         decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
         return new String(decryptedBytes);
+    }
+
+    @Override
+    public String encryptByECC(String str) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        String publicKey = properties.getECCPublicKey();
+        if (Objects.isNull(publicKey)) {
+            throw new RuntimeException("未配置ECC公钥");
+        }
+        return getECCEncryptResult(str, publicKey);
+    }
+
+    @Override
+    public String encryptByECC(String publicKey, String str) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        return getECCEncryptResult(str, publicKey);
+    }
+
+    @Override
+    public String decryptByECC(String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+        String privateKey = properties.getECCPrivateKey();
+        if (Objects.isNull(privateKey)) {
+            throw new RuntimeException("未配置ECC私钥");
+        }
+        return getECCDecryptResult(privateKey, encryptedStr);
+    }
+
+    @Override
+    public String decryptByECC(String privateKey, String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        return getECCDecryptResult(privateKey, encryptedStr);
+    }
+
+    private String getECCDecryptResult(String privateKey, String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+        PrivateKey key = keyFactory.generatePrivate(privateKeySpec);
+        Cipher cipher = Cipher.getInstance("ECIES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
+        byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+        return new String(decryptedBytes);
+    }
+
+
+    private String getECCEncryptResult(String str, String publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKey);
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("EC");
+        PublicKey key = keyFactory.generatePublic(publicKeySpec);
+        Cipher cipher = Cipher.getInstance("ECIES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedBytes = cipher.doFinal(str.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 }

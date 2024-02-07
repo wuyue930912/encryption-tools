@@ -22,4 +22,11 @@ public class EncryptionToolProperties {
     // RSA私钥
     private String RSAPrivateKey;
 
+    // RSA公钥
+    private String ECCPublicKey;
+
+    // RSA私钥
+    private String ECCPrivateKey;
+
+
 }
