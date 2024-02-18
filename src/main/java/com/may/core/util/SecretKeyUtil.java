@@ -8,10 +8,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAKeyGenParameterSpec;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.*;
 import java.util.Base64;
 
 /**
@@ -30,12 +27,16 @@ public class SecretKeyUtil {
      * @param bit 根据你的安全需求，你也可以选择生成128或192或256位的密钥
      * @return 随机AES密钥
      */
-    public static String generateAESKey(int bit) throws NoSuchAlgorithmException {
+    public static String generateAESKey(int bit) {
         // 实例化KeyGenerator对象，指定算法为AES
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-
-        // 强制使用新的安全随机数源（可选）
-        SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+        KeyGenerator keyGenerator;
+        SecureRandom secureRandom;
+        try {
+            keyGenerator = KeyGenerator.getInstance("AES");
+            secureRandom = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
 
         // 指定密钥长度为128位（AES标准支持128、192和256位）
         try {
@@ -79,20 +80,31 @@ public class SecretKeyUtil {
      * @param keySize 密钥位数
      * @return 公钥及私钥
      */
-    public static RSASecretKey generateRSAKey(Integer keySize) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static RSASecretKey generateRSAKey(Integer keySize) {
         // 添加Bouncy Castle作为安全提供者
         if (Security.getProvider("BC") == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
 
         // 指定算法为RSA
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+        KeyPairGenerator keyPairGenerator;
+        try {
+            keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        } catch (NoSuchProviderException e) {
+            throw new RuntimeException("请求的安全提供程序在当前环境中不可用");
+        }
 
         // 设置密钥长度，例如2048位
         RSAKeyGenParameterSpec spec = new RSAKeyGenParameterSpec(keySize, RSAKeyGenParameterSpec.F4);
 
         // 初始化密钥生成器
-        keyPairGenerator.initialize(spec);
+        try {
+            keyPairGenerator.initialize(spec);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new RuntimeException("算法参数无效或不受支持");
+        }
 
         // 生成密钥对
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -119,14 +131,32 @@ public class SecretKeyUtil {
      * @param stdName 曲线参数
      * @return 公钥及私钥
      */
-    public static ECCSecretKey generateECCKeyPair(String stdName) throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+    public static ECCSecretKey generateECCKeyPair(String stdName) {
+        KeyPairGenerator keyPairGenerator;
+        KeyFactory keyFactory;
+
+        try {
+            keyPairGenerator = KeyPairGenerator.getInstance("EC");
+            keyFactory = KeyFactory.getInstance("EC");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
         ECGenParameterSpec ecSpec = new ECGenParameterSpec(stdName); // 指定曲线参数
-        keyPairGenerator.initialize(ecSpec);
+        try {
+            keyPairGenerator.initialize(ecSpec);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new RuntimeException("算法参数无效或不受支持");
+        }
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        KeyFactory keyFactory = KeyFactory.getInstance("EC");
-        X509EncodedKeySpec publicKeySpec = keyFactory.getKeySpec(keyPair.getPublic(), X509EncodedKeySpec.class);
-        PKCS8EncodedKeySpec privateKeySpec = keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
+        X509EncodedKeySpec publicKeySpec;
+        PKCS8EncodedKeySpec privateKeySpec;
+        try {
+            publicKeySpec = keyFactory.getKeySpec(keyPair.getPublic(), X509EncodedKeySpec.class);
+            privateKeySpec = keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException("密钥规范无效或不受支持");
+        }
+
         return ECCSecretKey.builder()
                 .publicKey(keyPair.getPublic())
                 .publicKeyStr(Base64.getEncoder().encodeToString(publicKeySpec.getEncoded()))

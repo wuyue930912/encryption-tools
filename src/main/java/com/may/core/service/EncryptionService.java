@@ -1,12 +1,10 @@
 package com.may.core.service;
 
-import com.may.core.domain.RSASecretKey;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 public interface EncryptionService {
@@ -46,7 +44,7 @@ public interface EncryptionService {
      * @param str       要加密的字符串
      * @return  加密后的数据
      */
-    String encryptByAES(String keyValue, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException;
+    String encryptByAES(String keyValue, String str);
 
     /**
      * <!-- 使用AES算法对字符串加密 -->
@@ -57,7 +55,7 @@ public interface EncryptionService {
      * @param str       要加密的字符串
      * @return  加密后的数据
      */
-    String encryptByAES(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException;
+    String encryptByAES(String str);
 
     /**
      * <!-- 使用AES算法对字符串解密 -->
@@ -69,7 +67,7 @@ public interface EncryptionService {
      * @param str    加密后的字符串
      * @return  解密后的字符串
      */
-    String decryptByAES(String keyValue, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException;
+    String decryptByAES(String keyValue, String str);
 
     /**
      * <!-- 使用AES算法对字符串解密 -->
@@ -80,7 +78,7 @@ public interface EncryptionService {
      * @param str    加密后的字符串
      * @return  解密后的字符串
      */
-    String decryptByAES(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException;
+    String decryptByAES(String str);
 
     /**
      * <!-- 使用RSA公钥加密字符串 -->
@@ -89,7 +87,7 @@ public interface EncryptionService {
      * @param str   要加密的字符串
      * @return  加密后的字符串
      */
-    String encryptByRSA(String publicKey, String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException;
+    String encryptByRSA(String publicKey, String str);
 
     /**
      * <!-- 使用RSA公钥加密字符串 -->
@@ -100,7 +98,7 @@ public interface EncryptionService {
      * @param str   要加密的字符串
      * @return  加密后的字符串
      */
-    String encryptByRSA(String str) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException;
+    String encryptByRSA(String str);
 
     /**
      * <!-- 使用RSA私钥解密 -->
