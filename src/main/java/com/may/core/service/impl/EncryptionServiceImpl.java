@@ -138,23 +138,6 @@ public class EncryptionServiceImpl implements EncryptionService {
         return encryptInit(plaintextBytes, encryptCipher, publicKey);
     }
 
-    private String encryptInit(byte[] plaintextBytes, Cipher encryptCipher, PublicKey publicKey) {
-        try {
-            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        } catch (InvalidKeyException e) {
-            throw new RuntimeException("无效或不支持的密钥");
-        }
-        byte[] encryptBytes;
-        try {
-            encryptBytes = encryptCipher.doFinal(plaintextBytes);
-        } catch (IllegalBlockSizeException e) {
-            throw new RuntimeException("加密操作中的数据块大小无效");
-        } catch (BadPaddingException e) {
-            throw new RuntimeException("解密过程中发生了错误的填充");
-        }
-        return Base64.getEncoder().encodeToString(encryptBytes);
-    }
-
     @Override
     public String encryptByRSA(String str) {
         // 从使用者配置文件中获取公钥byte[]
@@ -479,5 +462,23 @@ public class EncryptionServiceImpl implements EncryptionService {
         }
         return Base64.getEncoder().encodeToString(encryptBytes);
     }
+
+    private String encryptInit(byte[] plaintextBytes, Cipher encryptCipher, PublicKey publicKey) {
+        try {
+            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("无效或不支持的密钥");
+        }
+        byte[] encryptBytes;
+        try {
+            encryptBytes = encryptCipher.doFinal(plaintextBytes);
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
+        return Base64.getEncoder().encodeToString(encryptBytes);
+    }
+
 
 }
