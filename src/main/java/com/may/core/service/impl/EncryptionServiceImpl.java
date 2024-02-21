@@ -7,6 +7,7 @@ import com.may.core.util.SecretKeyUtil;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.*;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -57,18 +58,6 @@ public class EncryptionServiceImpl implements EncryptionService {
         return getEncryptResult(str, cipher);
     }
 
-    private String getEncryptResult(String str, Cipher cipher) {
-        byte[] encryptBytes;
-        try {
-            encryptBytes = cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
-        } catch (IllegalBlockSizeException e) {
-            throw new RuntimeException("加密操作中的数据块大小无效");
-        } catch (BadPaddingException e) {
-            throw new RuntimeException("解密过程中发生了错误的填充");
-        }
-        return Base64.getEncoder().encodeToString(encryptBytes);
-    }
-
     @Override
     public String encryptByAES(String str) {
         Cipher cipher;
@@ -104,18 +93,6 @@ public class EncryptionServiceImpl implements EncryptionService {
             throw new RuntimeException("AES密钥格式错误");
         }
         return getDecryptData(str, cipher);
-    }
-
-    private String getDecryptData(String str, Cipher cipher) {
-        byte[] decryptedData;
-        try {
-            decryptedData = cipher.doFinal(Base64.getDecoder().decode(str));
-        } catch (IllegalBlockSizeException e) {
-            throw new RuntimeException("加密操作中的数据块大小无效");
-        } catch (BadPaddingException e) {
-            throw new RuntimeException("解密过程中发生了错误的填充");
-        }
-        return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -158,6 +135,10 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (InvalidKeySpecException e) {
             throw new RuntimeException("密钥规范无效或不受支持");
         }
+        return encryptInit(plaintextBytes, encryptCipher, publicKey);
+    }
+
+    private String encryptInit(byte[] plaintextBytes, Cipher encryptCipher, PublicKey publicKey) {
         try {
             encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
         } catch (InvalidKeyException e) {
@@ -200,48 +181,53 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (NoSuchPaddingException e) {
             throw new RuntimeException("请求的填充方式在当前环境中不可用");
         }
+        return encryptInit(plaintextBytes, encryptCipher, publicKey);
+    }
+
+    @Override
+    public String decryptByRSA(String privateKey, String encryptedStr) {
+        KeyFactory keyFactory;
         try {
-            encryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        } catch (InvalidKeyException e) {
-            throw new RuntimeException("无效或不支持的密钥");
+            keyFactory = KeyFactory.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
         }
-        byte[] encryptBytes;
+        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
+        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
         try {
-            encryptBytes = encryptCipher.doFinal(plaintextBytes);
+            return decrypt(encryptedBytes, keyFactory, privateKeyBytes);
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException("密钥规范无效或不受支持");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        } catch (NoSuchPaddingException e) {
+            throw new RuntimeException("请求的填充方式在当前环境中不可用");
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("RSA密钥格式错误");
         } catch (IllegalBlockSizeException e) {
             throw new RuntimeException("加密操作中的数据块大小无效");
         } catch (BadPaddingException e) {
             throw new RuntimeException("解密过程中发生了错误的填充");
         }
-        return Base64.getEncoder().encodeToString(encryptBytes);
-    }
-
-    private String decrypt(byte[] encryptedBytes, KeyFactory keyFactory, byte[] privateKeyBytes) throws InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-        PrivateKey realKey = keyFactory.generatePrivate(pkcs8KeySpec);
-        Cipher decryptCipher = Cipher.getInstance("RSA");
-        decryptCipher.init(Cipher.DECRYPT_MODE, realKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
-        return new String(decryptedBytes);
     }
 
     @Override
-    public String decryptByRSA(String privateKey, String encryptedStr) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidKeySpecException {
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
-        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
-        return decrypt(encryptedBytes, keyFactory, privateKeyBytes);
-    }
-
-    @Override
-    public String decryptByRSA(String encryptedStr) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public String decryptByRSA(String encryptedStr) {
         // 从使用者配置文件中获取私钥byte[]
         byte[] privateKeyBytes = Base64.getDecoder().decode(properties.getRSAPrivateKey());
-        Cipher decryptCipher = Cipher.getInstance("RSA");
+        Cipher decryptCipher;
+        KeyFactory keyFactory;
+
+        try {
+            decryptCipher = Cipher.getInstance("RSA");
+            keyFactory = KeyFactory.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        } catch (NoSuchPaddingException e) {
+            throw new RuntimeException("请求的填充方式在当前环境中不可用");
+        }
         byte[] encryptedBytes = Base64.getDecoder().decode(encryptedStr);
 
-        // 将byte[]转换成PrivateKey
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
         PrivateKey privateKey;
         try {
@@ -250,37 +236,156 @@ public class EncryptionServiceImpl implements EncryptionService {
             throw new RuntimeException(e);
         }
         // 通过私钥解密数据
-        decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
+        try {
+            decryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("RSA密钥格式错误");
+        }
+        byte[] decryptedBytes;
+        try {
+            decryptedBytes = decryptCipher.doFinal(encryptedBytes);
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
         return new String(decryptedBytes);
     }
 
     @Override
-    public String encryptByECC(String str) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public String encryptByECC(String str) {
         String publicKey = properties.getECCPublicKey();
         if (Objects.isNull(publicKey)) {
             throw new RuntimeException("未配置ECC公钥");
         }
-        return getECCEncryptResult(str, publicKey);
+        return getEncryptResultByResult(str, publicKey);
     }
 
     @Override
-    public String encryptByECC(String publicKey, String str) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        return getECCEncryptResult(str, publicKey);
+    public String encryptByECC(String publicKey, String str) {
+        return getEncryptResultByResult(str, publicKey);
     }
 
     @Override
-    public String decryptByECC(String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+    public String decryptByECC(String encryptedStr) {
         String privateKey = properties.getECCPrivateKey();
         if (Objects.isNull(privateKey)) {
             throw new RuntimeException("未配置ECC私钥");
         }
-        return getECCDecryptResult(privateKey, encryptedStr);
+        return getDecryptResultByECC(encryptedStr, privateKey);
     }
 
     @Override
-    public String decryptByECC(String privateKey, String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        return getECCDecryptResult(privateKey, encryptedStr);
+    public String decryptByECC(String privateKey, String encryptedStr) {
+        return getDecryptResultByECC(encryptedStr, privateKey);
+    }
+
+    @Override
+    public String encryptSHA1(String str) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
+        byte[] hash = md.digest(str.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+
+        return hexString.toString();
+    }
+
+    @Override
+    public Boolean verifySHA1(String encryptedStr, String str) {
+        String encrypted = encryptSHA1(str);
+        return encrypted.equals(encryptedStr);
+    }
+
+    @Override
+    public String encryptSHA256(String str) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
+        byte[] hash = md.digest(str.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+
+        return hexString.toString();
+    }
+
+    @Override
+    public Boolean verifySHA256(String encryptedStr, String str) {
+        String encrypted = encryptSHA256(str);
+        return encrypted.equals(encryptedStr);
+    }
+
+    @Override
+    public String encryptSHA512(String str) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-512");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
+        byte[] hash = md.digest(str.getBytes(StandardCharsets.UTF_8));
+
+        BigInteger number = new BigInteger(1, hash);
+        StringBuilder hexString = new StringBuilder(number.toString(16));
+
+        while (hexString.length() < 128) {
+            hexString.insert(0, "0");
+        }
+
+        return hexString.toString();
+    }
+
+    @Override
+    public Boolean verifySHA512(String encryptedStr, String str) {
+        String encrypted = encryptSHA512(str);
+        return encrypted.equals(encryptedStr);
+    }
+
+    @Override
+    public String encryptMD5(String str) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        }
+        byte[] hash = md.digest(str.getBytes(StandardCharsets.UTF_8));
+
+        BigInteger number = new BigInteger(1, hash);
+        StringBuilder hexString = new StringBuilder(number.toString(16));
+
+        while (hexString.length() < 32) {
+            hexString.insert(0, "0");
+        }
+
+        return hexString.toString();
+    }
+
+    @Override
+    public Boolean verifyMD5(String encryptedStr, String str) {
+        String encrypted = encryptMD5(str);
+        return encrypted.equals(encryptedStr);
     }
 
     private String getECCDecryptResult(String privateKey, String encryptedStr) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
@@ -295,6 +400,41 @@ public class EncryptionServiceImpl implements EncryptionService {
         return new String(decryptedBytes);
     }
 
+    private String getDecryptResultByECC(String encryptedStr, String privateKey) {
+        try {
+            return getECCDecryptResult(privateKey, encryptedStr);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException("密钥规范无效或不受支持");
+        } catch (NoSuchPaddingException e) {
+            throw new RuntimeException("请求的填充方式在当前环境中不可用");
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("ECC密钥格式错误");
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
+    }
+
+    private String getEncryptResultByResult(String str, String publicKey) {
+        try {
+            return getECCEncryptResult(str, publicKey);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException("密钥规范无效或不受支持");
+        } catch (NoSuchPaddingException e) {
+            throw new RuntimeException("请求的填充方式在当前环境中不可用");
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException("ECC密钥格式错误");
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
+    }
 
     private String getECCEncryptResult(String str, String publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         byte[] publicKeyBytes = Base64.getDecoder().decode(publicKey);
@@ -306,4 +446,38 @@ public class EncryptionServiceImpl implements EncryptionService {
         byte[] encryptedBytes = cipher.doFinal(str.getBytes());
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
+
+    private String decrypt(byte[] encryptedBytes, KeyFactory keyFactory, byte[] privateKeyBytes) throws InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        PrivateKey realKey = keyFactory.generatePrivate(pkcs8KeySpec);
+        Cipher decryptCipher = Cipher.getInstance("RSA");
+        decryptCipher.init(Cipher.DECRYPT_MODE, realKey);
+        byte[] decryptedBytes = decryptCipher.doFinal(encryptedBytes);
+        return new String(decryptedBytes);
+    }
+
+    private String getDecryptData(String str, Cipher cipher) {
+        byte[] decryptedData;
+        try {
+            decryptedData = cipher.doFinal(Base64.getDecoder().decode(str));
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
+        return new String(decryptedData, StandardCharsets.UTF_8);
+    }
+
+    private String getEncryptResult(String str, Cipher cipher) {
+        byte[] encryptBytes;
+        try {
+            encryptBytes = cipher.doFinal(str.getBytes(StandardCharsets.UTF_8));
+        } catch (IllegalBlockSizeException e) {
+            throw new RuntimeException("加密操作中的数据块大小无效");
+        } catch (BadPaddingException e) {
+            throw new RuntimeException("解密过程中发生了错误的填充");
+        }
+        return Base64.getEncoder().encodeToString(encryptBytes);
+    }
+
 }

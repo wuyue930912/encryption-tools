@@ -5,6 +5,9 @@
 并对大部分异常进行了解释说明，方便使用者快速定位问题。
 ```
 
+## 项目链接
+[encryption-tools](https://github.com/wuyue930912/encryption-tools)
+
 ## 常用的加密/解密算法介绍及其常用的应用场景
 
 ### BCrypt
@@ -94,25 +97,95 @@ ECC（Elliptic Curve Cryptography）是一种基于椭圆曲线的非对称加�
 
 ECC的主要特点和工作原理如下：
 
-    1. 椭圆曲线：ECC基于椭圆曲线上的离散数学问题，利用椭圆曲线的数学特性进行加密和解密操作。椭圆曲线方程形式为 y^2 = x^3 + ax + b，在有限域上进行计算。
-    
-    2. 密钥生成：ECC使用椭圆曲线上的点作为公钥，私钥是一个随机数。通过选择合适的椭圆曲线和生成私钥，可以计算出对应的公钥。
-    
-    3. 加密和解密：使用对方的公钥对数据进行加密，只有持有相应私钥的一方才能解密。加密和解密过程涉及椭圆曲线上的点运算和数论运算。
-    
-    4. 密钥长度：相比于传统加密算法，ECC可以使用更短的密钥长度达到相同的安全性水平。这对于资源受限的设备和网络通信中的性能优化非常有利。
+      1. 椭圆曲线：ECC基于椭圆曲线上的离散数学问题，利用椭圆曲线的数学特性进行加密和解密操作。椭圆曲线方程形式为 y^2 = x^3 + ax + b，在有限域上进行计算。
+      
+      2. 密钥生成：ECC使用椭圆曲线上的点作为公钥，私钥是一个随机数。通过选择合适的椭圆曲线和生成私钥，可以计算出对应的公钥。
+      
+      3. 加密和解密：使用对方的公钥对数据进行加密，只有持有相应私钥的一方才能解密。加密和解密过程涉及椭圆曲线上的点运算和数论运算。
+      
+      4. 密钥长度：相比于传统加密算法，ECC可以使用更短的密钥长度达到相同的安全性水平。这对于资源受限的设备和网络通信中的性能优化非常有利。
 
 常见的使用场景包括：
 
-    1. 移动设备和物联网（IoT）：由于ECC可以使用较短的密钥长度，适用于资源受限的移动设备和物联网设备。它可以用于保护移动设备上的敏感数据和通信，以及在物联网中确保设备之间的安全通信。
-    
-    2. 数字证书和SSL/TLS通信：ECC广泛应用于数字证书和SSL/TLS通信领域。它可以用于生成和验证数字证书，以及在客户端和服务器之间建立安全的通信连接，提供身份认证、密钥交换和通信数据的加密。
-    
-    3. 加密协议和安全通信：ECC可用于构建安全通信协议，例如加密电子邮件、加密即时通信和虚拟专用网络（VPN）。它可以提供机密性、完整性和身份认证，确保通信的安全性。
-    
-    4. 区块链和加密货币：ECC在区块链技术和加密货币中扮演重要角色。它用于生成和验证数字签名，确保交易的有效性和安全性。
+      1. 移动设备和物联网（IoT）：由于ECC可以使用较短的密钥长度，适用于资源受限的移动设备和物联网设备。它可以用于保护移动设备上的敏感数据和通信，以及在物联网中确保设备之间的安全通信。
+      
+      2. 数字证书和SSL/TLS通信：ECC广泛应用于数字证书和SSL/TLS通信领域。它可以用于生成和验证数字证书，以及在客户端和服务器之间建立安全的通信连接，提供身份认证、密钥交换和通信数据的加密。
+      
+      3. 加密协议和安全通信：ECC可用于构建安全通信协议，例如加密电子邮件、加密即时通信和虚拟专用网络（VPN）。它可以提供机密性、完整性和身份认证，确保通信的安全性。
+      
+      4. 区块链和加密货币：ECC在区块链技术和加密货币中扮演重要角色。它用于生成和验证数字签名，确保交易的有效性和安全性。
 
 总的来说，ECC是一种高效且安全的非对称加密算法，适用于资源受限的环境和性能敏感的应用。它广泛应用于移动设备、物联网、SSL/TLS通信、加密协议、区块链和加密货币等领域，提供数据的保护和安全通信的支持。
+ ```
+
+### SHA-1
+
+ ```
+SHA-1（Secure Hash Algorithm 1）是一种哈希函数，用于将任意长度的数据转换为固定长度（160位）的哈希值。它是SHA系列算法中的一员，由美国国家安全局（NSA）于1995年发布。
+
+SHA-1广泛应用于许多领域，包括密码学、数据完整性校验和数字签名等。以下是一些常见的使用场景：
+
+      1. 数据完整性校验：SHA-1可用于校验数据的完整性，确保数据在传输或存储过程中没有被篡改。发送方可以对发送的数据计算SHA-1哈希值，并将其一同发送给接收方。接收方可以再次计算SHA-1哈希值，并与接收到的哈希值进行比较，以验证数据的完整性。
+      
+      2. 数字签名：SHA-1常用于生成数字签名。在数字签名过程中，使用私钥对数据的SHA-1哈希值进行加密，生成数字签名。接收方可以使用相应的公钥对数字签名进行解密，并计算数据的SHA-1哈希值，然后将两者进行比较，以验证签名的真实性和数据的完整性。
+      
+      3. 安全协议：SHA-1在一些安全协议中起到重要作用，例如SSL/TLS（Secure Sockets Layer/Transport Layer Security）协议中的证书验证过程。在该过程中，服务器使用SHA-1对其证书的公钥进行哈希运算，以提供给客户端进行验证。
+
+然而，需要注意的是，SHA-1算法已经不再被认为是足够安全，因为它存在一些安全性漏洞和碰撞攻击的风险。因此，在现代的应用中，推荐使用更强大和安全性更高的哈希算法，如SHA-256、SHA-512等。
+ ```
+
+### SHA-256
+
+ ```
+SHA-256（Secure Hash Algorithm 256-bit）是SHA-2系列算法中的一种，是一种密码学安全哈希函数。它将任意长度的数据转换为固定长度的哈希值（256位），具有较高的安全性和抗碰撞性。
+
+以下是SHA-256加密算法的介绍和常见的使用场景：
+
+      1. 数据完整性校验：SHA-256广泛应用于数据完整性校验。通过计算数据的SHA-256哈希值，可以生成一个唯一的、固定长度的摘要。在数据传输或存储过程中，接收方可以再次计算数据的SHA-256哈希值，然后与发送方提供的哈希值进行比较，以验证数据的完整性和防止篡改。
+      
+      2. 数字签名：SHA-256也常用于生成数字签名。在数字签名过程中，使用私钥对数据的SHA-256哈希值进行加密，生成数字签名。接收方可以使用相应的公钥对数字签名进行解密，并计算数据的SHA-256哈希值，然后将两者进行比较，以验证签名的真实性和数据的完整性。
+      
+      3. 密码存储：SHA-256常用于密码存储，特别是在用户认证系统中。通常，用户的密码不会直接存储，而是将其经过SHA-256哈希处理后存储为摘要。当用户登录时，输入的密码也会经过SHA-256哈希处理，然后与存储的摘要进行比较，以验证密码的正确性。
+      
+      4. 区块链：SHA-256在区块链技术中发挥重要作用。区块链使用SHA-256哈希函数来生成块的哈希值，以确保每个块的完整性和链接性。此外，SHA-256还用于挖矿过程中的工作量证明（Proof of Work），以保证区块的安全性和一致性。
+  
+总的来说，SHA-256是一种强大且广泛使用的哈希算法，适用于数据完整性校验、数字签名、密码存储和区块链等多个领域。它提供了高度的安全性和抗碰撞性，是许多安全应用中的首选算法之一。
+```
+
+### SHA-512
+
+ ```
+SHA-512（Secure Hash Algorithm 512-bit）是SHA-2系列算法中的一种，是一种密码学安全哈希函数。它将任意长度的数据转换为固定长度的哈希值（512位），具有非常高的安全性和抗碰撞性。
+
+以下是SHA-512加密算法的介绍和常见的使用场景：
+
+    1. 数据完整性校验：SHA-512广泛应用于数据完整性校验。通过计算数据的SHA-512哈希值，可以生成一个唯一的、固定长度的摘要。在数据传输或存储过程中，接收方可以再次计算数据的SHA-512哈希值，然后与发送方提供的哈希值进行比较，以验证数据的完整性和防止篡改。
+    
+    2. 数字签名：SHA-512也常用于生成数字签名。在数字签名过程中，使用私钥对数据的SHA-512哈希值进行加密，生成数字签名。接收方可以使用相应的公钥对数字签名进行解密，并计算数据的SHA-512哈希值，然后将两者进行比较，以验证签名的真实性和数据的完整性。
+    
+    3. 密码存储：SHA-512常用于密码存储，特别是在安全敏感的应用中。与MD5和SHA-1相比，SHA-512提供更高的安全性和抵抗碰撞性，使得密码更难以被暴力破解。通常，用户的密码不会直接存储，而是将其经过SHA-512哈希处理后存储为摘要。
+    
+    4. 数据加密：SHA-512可以与其他加密算法结合使用，用于数据加密和安全通信。在加密过程中，首先对数据进行SHA-512哈希处理，然后将其作为密钥或初始向量输入到加密算法中，以增强加密的安全性。
+
+总的来说，SHA-512是一种强大且广泛使用的哈希算法，适用于数据完整性校验、数字签名、密码存储和数据加密等多个领域。它提供了极高的安全性和抗碰撞性，是许多安全应用中的首选算法之一。然而，需要注意的是，SHA-512计算速度较慢，对于某些应用而言可能会影响性能。在选择算法时，需要综合考虑安全性和性能需求。
+```
+
+### MD5
+
+ ```
+MD5（Message Digest Algorithm 5）是一种广泛使用的哈希函数，用于将任意长度的数据转换为固定长度（128位）的哈希值。它是MD系列算法中的一员，由Ronald Rivest在1991年设计。
+
+以下是MD5加密算法的介绍和常见的使用场景：
+
+    1. 数据完整性校验：MD5经常用于校验数据的完整性。发送方可以对发送的数据计算MD5哈希值，并将其与接收方共享。接收方可以再次计算数据的MD5哈希值，并将其与接收到的哈希值进行比较，以验证数据在传输或存储过程中是否被篡改。
+    
+    2. 密码存储：在一些旧的系统中，MD5被用于存储密码的摘要。用户的密码经过MD5哈希处理后，生成一个固定长度的摘要，并将其存储在数据库中。当用户登录时，输入的密码也会经过MD5哈希处理，然后与存储的摘要进行比较，以验证密码的正确性。
+    
+    3. 检验文件完整性：MD5常用于检验文件的完整性。用户可以在下载文件之后，计算文件的MD5哈希值，并与提供的哈希值进行比较，以确保文件在传输过程中没有损坏或篡改。
+
+然而，需要注意的是，MD5算法已经不再被认为是足够安全，因为它存在一些安全性漏洞和碰撞攻击的风险。因此，在现代的应用中，推荐使用更强大和安全性更高的哈希算法，如SHA-256、SHA-512等。
+
+总的来说，MD5是一种常见的哈希算法，适用于数据完整性校验、密码存储和文件完整性检验等场景。然而，出于安全考虑，建议在重要的安全应用中使用更强大和安全性更高的哈希算法。
  ```
 
 ## 使用方法
@@ -120,14 +193,16 @@ ECC的主要特点和工作原理如下：
 ### 1、引入依赖
 
  ```xml
-    <dependency>
+
+<dependency>
     <groupId>com.may</groupId>
     <artifactId>encryption-tool</artifactId>
-    <version>1.0.21</version>
+    <version>1.0.23</version>
 </dependency>
  ```
 
 ### 2、执行命令
+
  ``` java
 mvn install
  ```
@@ -136,72 +211,108 @@ mvn install
 
  ``` java
  try {
-      System.err.println("--------------------------------------------------------------");
-      String str = encryptionService.encryptByBCrypt("wwww");
-      System.out.println("BCrypt加密后：" + str);
+       System.err.println("--------------------------------------------------------------");
+       String str = encryptionService.encryptByBCrypt("wwww");
+       System.out.println("BCrypt加密后：" + str);
 
-      Boolean matchResult = encryptionService.matchByBCrypt("wwww", str);
-      System.err.println("BCrypt校验结果 : " + matchResult);
+       Boolean matchResult = encryptionService.matchByBCrypt("wwww", str);
+       System.err.println("BCrypt校验结果 : " + matchResult);
 
-      Thread.sleep(1000);
-      System.err.println("--------------------------------------------------------------");
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
 
-      String key = SecretKeyUtil.generateAESKey(128);
-      System.out.println("AES key : " + key);
+       String key = SecretKeyUtil.generateAESKey(128);
+       System.out.println("AES key : " + key);
 
-      String cardNo = encryptionService.encryptByAES(key, "231025199909090099");
-      System.out.println("AES 加密后 : " + cardNo);
+       String cardNo = encryptionService.encryptByAES(key, "231025199909090099");
+       System.out.println("AES 加密后 : " + cardNo);
 
-      String no = encryptionService.decryptByAES(key, cardNo);
-      System.err.println("AES 解密后 : " + no);
+       String no = encryptionService.decryptByAES(key, cardNo);
+       System.err.println("AES 解密后 : " + no);
 
-      String cardNo2 = encryptionService.encryptByAES("54321");
-      System.out.println("AES 加密后 : " + cardNo2);
+       String cardNo2 = encryptionService.encryptByAES("54321");
+       System.out.println("AES 加密后 : " + cardNo2);
 
-      String no2 = encryptionService.decryptByAES(cardNo2);
-      System.err.println("AES 解密后 : " + no2);
+       String no2 = encryptionService.decryptByAES(cardNo2);
+       System.err.println("AES 解密后 : " + no2);
 
-      Thread.sleep(1000);
-      System.err.println("--------------------------------------------------------------");
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
 
-      RSASecretKey keys = SecretKeyUtil.generateRSAKey(512);
-      System.out.println("RSA公钥字符串 : " + keys.getPublicKeyStr());
-      System.out.println("RSA私钥字符串 : " + keys.getPrivateKeyStr());
+       RSASecretKey keys = SecretKeyUtil.generateRSAKey(512);
+       System.out.println("RSA公钥字符串 : " + keys.getPublicKeyStr());
+       System.out.println("RSA私钥字符串 : " + keys.getPrivateKeyStr());
 
-      String strRsa = encryptionService.encryptByRSA(keys.getPublicKeyStr(), "who is your daddy? 一二三三二一~ 啊啊~");
-      System.out.println("RSA加密后 : " + strRsa);
+       String strRsa = encryptionService.encryptByRSA(keys.getPublicKeyStr(), "who is your daddy? 一二三三二一~ 啊啊~");
+       System.out.println("RSA加密后 : " + strRsa);
 
-      String strRsaDecode = encryptionService.decryptByRSA(keys.getPrivateKeyStr(), strRsa);
-      System.err.println("RSA解密后 : " + strRsaDecode);
+       String strRsaDecode = encryptionService.decryptByRSA(keys.getPrivateKeyStr(), strRsa);
+       System.err.println("RSA解密后 : " + strRsaDecode);
 
-      String strRsa2 = encryptionService.encryptByRSA("who is your mom? 一二三！三二一！啊啊！");
-      System.out.println("RSA加密后 : " + strRsa2);
+       String strRsa2 = encryptionService.encryptByRSA("who is your mom? 一二三！三二一！啊啊！");
+       System.out.println("RSA加密后 : " + strRsa2);
 
-      String strRsaDecode2 = encryptionService.decryptByRSA(strRsa2);
-      System.err.println("RSA解密后 : " + strRsaDecode2);
+       String strRsaDecode2 = encryptionService.decryptByRSA(strRsa2);
+       System.err.println("RSA解密后 : " + strRsaDecode2);
 
-      Thread.sleep(1000);
-      System.err.println("--------------------------------------------------------------");
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
 
-      ECCSecretKey eccKeys = SecretKeyUtil.generateECCKeyPair("secp256k1");
-      System.out.println("ECC公钥字符串 : " + eccKeys.getPublicKeyStr());
-      System.out.println("ECC私钥字符串 : " + eccKeys.getPrivateKeyStr());
+       ECCSecretKey eccKeys = SecretKeyUtil.generateECCKeyPair("secp256k1");
+       System.out.println("ECC公钥字符串 : " + eccKeys.getPublicKeyStr());
+       System.out.println("ECC私钥字符串 : " + eccKeys.getPrivateKeyStr());
 
-      String eccStr = encryptionService.encryptByECC(eccKeys.getPublicKeyStr(), "一朝君子一朝臣!");
-      System.out.println("ECC加密后 : " + eccStr);
+       String eccStr = encryptionService.encryptByECC(eccKeys.getPublicKeyStr(), "一朝君子一朝臣!");
+       System.out.println("ECC加密后 : " + eccStr);
 
-      String eccStr2 = encryptionService.decryptByECC(eccKeys.getPrivateKeyStr(), eccStr);
-      System.err.println("ECC解密后 : " + eccStr2);
+       String eccStr2 = encryptionService.decryptByECC(eccKeys.getPrivateKeyStr(), eccStr);
+       System.err.println("ECC解密后 : " + eccStr2);
 
-      String eccStr3 = encryptionService.encryptByECC("华语乐坛永远的神!");
-      System.out.println("ECC加密后 : " + eccStr3);
+       String eccStr3 = encryptionService.encryptByECC("华语乐坛永远的神!");
+       System.out.println("ECC加密后 : " + eccStr3);
 
-      String eccStr4 = encryptionService.decryptByECC(eccStr3);
-      System.err.println("ECC解密后 : " + eccStr4);
+       String eccStr4 = encryptionService.decryptByECC(eccStr3);
+       System.err.println("ECC解密后 : " + eccStr4);
 
-      Thread.sleep(1000);
-      System.err.println("--------------------------------------------------------------");
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
+       Thread.sleep(1000);
 
+       String SHA1Str = encryptionService.encryptSHA1("hello呀 world!");
+       System.out.println("SHA-1加密后 : " + SHA1Str);
+
+       Boolean verResult = encryptionService.verifySHA1(SHA1Str, "hello呀 world!");
+       System.err.println("SHA-1校验后 : " + verResult);
+
+       Boolean verResult2 = encryptionService.verifySHA1(SHA1Str, "hello呀 world!！");
+       System.err.println("SHA-1校验后 - 2  : " + verResult2);
+
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
+
+       String SHA256Str =encryptionService.encryptSHA256("hello呀 world! 256");
+       System.out.println("SHA-256加密后 : " + SHA256Str);
+
+       Boolean ver256Result = encryptionService.verifySHA256(SHA256Str, "hello呀 world! 256");
+       System.err.println("SHA-256校验后 : " + ver256Result);
+
+       String SHA512Str =encryptionService.encryptSHA512("hello呀 world! 512");
+       System.out.println("SHA-512加密后 : " + SHA512Str);
+
+       Boolean ver512Result = encryptionService.verifySHA512(SHA512Str, "hello呀 world! 512");
+       System.err.println("SHA-512校验后 : " + ver512Result);
+
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
+
+       String MD5Str = encryptionService.encryptMD5("hello呀 world! MD5");
+       System.out.println("MD5加密后 : " + MD5Str);
+
+       Boolean verMD5Result = encryptionService.verifyMD5(MD5Str, "hello呀 world! MD5");
+       System.err.println("MD5校验结果 : " + verMD5Result);
+
+       Thread.sleep(1000);
+       System.err.println("--------------------------------------------------------------");
    } catch (Exception e) {
        throw new RuntimeException(e);
    }
