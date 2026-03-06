@@ -2,6 +2,7 @@ package com.may.core.util;
 
 import com.may.core.domain.ECCSecretKey;
 import com.may.core.domain.RSASecretKey;
+import com.may.core.exception.EncryptionException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.KeyGenerator;
@@ -12,157 +13,113 @@ import java.security.spec.*;
 import java.util.Base64;
 
 /**
- * 密码加密&校验工具类
+ * 密鑰生成與轉換工具類
  */
 public class SecretKeyUtil {
+
     private SecretKeyUtil() {
     }
 
-    /**
-     * <!-- 生成随机AES密钥 -->
-     * <p>
-     * AES（Advanced Encryption Standard）算法是一种广泛采用的对称密钥加密标准，由美国国家标准与技术研究院（NIST）于2001年正式发布，
-     * 作为DES加密算法的替代方案。AES设计者是比利时密码学家Joan Daemen和Vincent Rijmen，其基础算法被称为Rijndael。
-     *
-     * @param bit 根据你的安全需求，你也可以选择生成128或192或256位的密钥
-     * @return 随机AES密钥
-     */
-    public static String generateAESKey(int bit) {
-        // 实例化KeyGenerator对象，指定算法为AES
-        KeyGenerator keyGenerator;
-        SecureRandom secureRandom;
-        try {
-            keyGenerator = KeyGenerator.getInstance("AES");
-            secureRandom = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
-        }
-
-        // 指定密钥长度为128位（AES标准支持128、192和256位）
-        try {
-            keyGenerator.init(bit, secureRandom);
-        } catch (Exception e) {
-            throw new RuntimeException("AES密钥位数应为128或192或256");
-        }
-
-        SecretKey secretKey = keyGenerator.generateKey();
-
-        // 生成AES密钥
-        return Base64.getEncoder().encodeToString(secretKey.getEncoded());
-    }
-
-    /**
-     * <!-- 将byte[]转换成SecretKey -->
-     * <p>
-     * AES（Advanced Encryption Standard）算法是一种广泛采用的对称密钥加密标准，由美国国家标准与技术研究院（NIST）于2001年正式发布，
-     * 作为DES加密算法的替代方案。AES设计者是比利时密码学家Joan Daemen和Vincent Rijmen，其基础算法被称为Rijndael。
-     *
-     * @param keyMaterial 密钥的byte[]
-     * @return AES密钥
-     */
-    public static SecretKey convertAESKey(String keyMaterial) {
-        // 确保你的keyMaterial字节数组是对应算法要求的密钥长度
-        byte[] key = Base64.getDecoder().decode(keyMaterial);
-        try {
-            return new SecretKeySpec(key, "AES");
-        } catch (Exception e) {
-            throw new RuntimeException("确保你的AES密钥字节数组是对应算法要求的密钥长度");
-        }
-    }
-
-    /**
-     * <!-- 生成RSA公钥和私钥 -->
-     *
-     * <p>
-     * RSA加密是一种公钥密码体制，它是目前应用最广泛的非对称加密算法之一。非对称加密意味着加密和解密使用两个不同的密钥，这两个密钥在数学上相关联，
-     * 但不能从一个密钥直接推导出另一个密钥。
-     *
-     * @param keySize 密钥位数
-     * @return 公钥及私钥
-     */
-    public static RSASecretKey generateRSAKey(Integer keySize) {
-        // 添加Bouncy Castle作为安全提供者
+    static {
         if (Security.getProvider("BC") == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
-
-        // 指定算法为RSA
-        KeyPairGenerator keyPairGenerator;
-        try {
-            keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
-        } catch (NoSuchProviderException e) {
-            throw new RuntimeException("请求的安全提供程序在当前环境中不可用");
-        }
-
-        // 设置密钥长度，例如2048位
-        RSAKeyGenParameterSpec spec = new RSAKeyGenParameterSpec(keySize, RSAKeyGenParameterSpec.F4);
-
-        // 初始化密钥生成器
-        try {
-            keyPairGenerator.initialize(spec);
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new RuntimeException("算法参数无效或不受支持");
-        }
-
-        // 生成密钥对
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-
-        // 转换成字符串
-        String publicKeyString = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
-        String privateKeyString = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
-
-        // 返回密钥对
-        return RSASecretKey.builder()
-                .publicKey(keyPair.getPublic())
-                .publicKeyStr(publicKeyString)
-                .privateKey(keyPair.getPrivate())
-                .privateKeyStr(privateKeyString)
-                .build();
     }
 
     /**
-     * <!-- 生成ECC公钥和私钥 -->
+     * <!-- 生成隨機AES密鑰 -->
      *
-     * <p>
-     * 椭圆曲线密码
+     * @param bit 密鑰位數，支持 128、192、256
+     * @return Base64 編碼的 AES 密鑰
+     */
+    public static String generateAESKey(int bit) {
+        try {
+            KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+            SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+            keyGenerator.init(bit, secureRandom);
+            SecretKey secretKey = keyGenerator.generateKey();
+            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        } catch (NoSuchAlgorithmException e) {
+            throw new EncryptionException("AES演算法在當前環境中不可用", e);
+        } catch (Exception e) {
+            throw new EncryptionException("AES密鑰位數應為128、192或256", e);
+        }
+    }
+
+    /**
+     * <!-- 將 Base64 字串轉換為 SecretKey -->
      *
-     * @param stdName 曲线参数
-     * @return 公钥及私钥
+     * @param keyMaterial Base64 編碼的密鑰字串
+     * @return AES SecretKey
+     */
+    public static SecretKey convertAESKey(String keyMaterial) {
+        try {
+            byte[] key = Base64.getDecoder().decode(keyMaterial);
+            return new SecretKeySpec(key, "AES");
+        } catch (Exception e) {
+            throw new EncryptionException("AES密鑰格式無效，請確保密鑰為正確的Base64編碼", e);
+        }
+    }
+
+    /**
+     * <!-- 生成RSA公鑰和私鑰 -->
+     *
+     * @param keySize 密鑰位數（建議 2048 以上）
+     * @return RSA 密鑰對
+     */
+    public static RSASecretKey generateRSAKey(Integer keySize) {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+            RSAKeyGenParameterSpec spec = new RSAKeyGenParameterSpec(keySize, RSAKeyGenParameterSpec.F4);
+            keyPairGenerator.initialize(spec);
+
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            String publicKeyString = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+            String privateKeyString = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+            return RSASecretKey.builder()
+                    .publicKey(keyPair.getPublic())
+                    .publicKeyStr(publicKeyString)
+                    .privateKey(keyPair.getPrivate())
+                    .privateKeyStr(privateKeyString)
+                    .build();
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new EncryptionException("RSA演算法或BC Provider在當前環境中不可用", e);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new EncryptionException("RSA密鑰參數無效", e);
+        }
+    }
+
+    /**
+     * <!-- 生成ECC公鑰和私鑰 -->
+     *
+     * @param stdName 曲線參數（如 secp256k1、secp256r1）
+     * @return ECC 密鑰對
      */
     public static ECCSecretKey generateECCKeyPair(String stdName) {
-        KeyPairGenerator keyPairGenerator;
-        KeyFactory keyFactory;
-
         try {
-            keyPairGenerator = KeyPairGenerator.getInstance("EC");
-            keyFactory = KeyFactory.getInstance("EC");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("请求的加密算法或哈希算法在当前环境中不可用");
-        }
-        ECGenParameterSpec ecSpec = new ECGenParameterSpec(stdName); // 指定曲线参数
-        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+            KeyFactory keyFactory = KeyFactory.getInstance("EC");
+            ECGenParameterSpec ecSpec = new ECGenParameterSpec(stdName);
             keyPairGenerator.initialize(ecSpec);
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new RuntimeException("算法参数无效或不受支持");
-        }
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        X509EncodedKeySpec publicKeySpec;
-        PKCS8EncodedKeySpec privateKeySpec;
-        try {
-            publicKeySpec = keyFactory.getKeySpec(keyPair.getPublic(), X509EncodedKeySpec.class);
-            privateKeySpec = keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
-        } catch (InvalidKeySpecException e) {
-            throw new RuntimeException("密钥规范无效或不受支持");
-        }
 
-        return ECCSecretKey.builder()
-                .publicKey(keyPair.getPublic())
-                .publicKeyStr(Base64.getEncoder().encodeToString(publicKeySpec.getEncoded()))
-                .privateKey(keyPair.getPrivate())
-                .privateKeyStr(Base64.getEncoder().encodeToString(privateKeySpec.getEncoded()))
-                .build();
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            X509EncodedKeySpec publicKeySpec = keyFactory.getKeySpec(keyPair.getPublic(), X509EncodedKeySpec.class);
+            PKCS8EncodedKeySpec privateKeySpec = keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
+
+            return ECCSecretKey.builder()
+                    .publicKey(keyPair.getPublic())
+                    .publicKeyStr(Base64.getEncoder().encodeToString(publicKeySpec.getEncoded()))
+                    .privateKey(keyPair.getPrivate())
+                    .privateKeyStr(Base64.getEncoder().encodeToString(privateKeySpec.getEncoded()))
+                    .build();
+        } catch (NoSuchAlgorithmException e) {
+            throw new EncryptionException("EC演算法在當前環境中不可用", e);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new EncryptionException("ECC曲線參數無效：" + stdName, e);
+        } catch (InvalidKeySpecException e) {
+            throw new EncryptionException("ECC密鑰規範無效", e);
+        }
     }
 
 }

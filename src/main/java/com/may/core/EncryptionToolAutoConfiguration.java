@@ -2,6 +2,7 @@ package com.may.core;
 
 import com.may.core.service.EncryptionService;
 import com.may.core.service.impl.EncryptionServiceImpl;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ public class EncryptionToolAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(EncryptionService.class)
     public EncryptionService encryptionService() {
         return new EncryptionServiceImpl(properties);
     }
