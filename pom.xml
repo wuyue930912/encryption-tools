@@ -5,15 +5,16 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.1.RELEASE</version>
+        <version>2.7.18</version>
     </parent>
     <groupId>com.may</groupId>
     <artifactId>encryption-tool</artifactId>
-    <version>1.0.23</version>
+    <version>1.1.0</version>
     <name>encryption-tool</name>
-    <description>encryption-tool</description>
+    <description>Spring Boot Starter for encryption utilities (BCrypt, AES, RSA, ECC, SHA, MD5)</description>
     <properties>
         <java.version>11</java.version>
+        <hutool.version>5.8.25</hutool.version>
     </properties>
     <dependencies>
         <dependency>
@@ -26,27 +27,20 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-        <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-crypto</artifactId>
-            <version>5.7.15</version>
+            <version>${hutool.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-core</artifactId>
-            <version>5.8.25</version>
+            <version>${hutool.version}</version>
         </dependency>
-        <!-- Bouncy Castle for AES support -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.70</version>
         </dependency>
-
     </dependencies>
 
     <repositories>

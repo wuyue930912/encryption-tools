@@ -4,29 +4,28 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 配置项
+ * 配置項
  */
 @ConfigurationProperties(prefix = "encryption.tool")
 @Data
 public class EncryptionToolProperties {
 
-    // BCrypt盐值
+    // BCrypt鹽值
     private String BCryptSalt;
 
-    // ASE密钥
+    // AES密鑰
     private String AESSecretKey;
 
-    // RSA公钥
+    // RSA公鑰
     private String RSAPublicKey;
 
-    // RSA私钥
+    // RSA私鑰
     private String RSAPrivateKey;
 
-    // RSA公钥
+    // ECC公鑰
     private String ECCPublicKey;
 
-    // RSA私钥
+    // ECC私鑰
     private String ECCPrivateKey;
-
 
 }
