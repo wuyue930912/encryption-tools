@@ -345,16 +345,6 @@ encryption:
 
 ## 更新记录
 
-### 2026-03-11 (第三次优化)
-- 新增HKDF密钥派生功能（deriveKeyByHKDF），支持自定义盐值、信息和输出长度
-- 新增X25519密钥交换支持（generateX25519KeyPair/deriveSharedSecretByX25519）
-- 新增统一加密/解密接口encrypt/decrypt，简化算法调用
-- 新增静态工厂方法（EncryptionService.create），方便快速创建实例
-- 新增InvalidKeyException异常类，更精确地处理密钥相关错误
-- 优化EncryptionException，添加静态工厂方法（invalidKey/encryptFailed/decryptFailed等）
-- 新增HKDFSalt/HKDFInfo/HKDFKeyLength配置项支持
-- 优化代码结构和注释，提高可读性
-
 ### 2026-03-11
 - 新增SM2国密非对称加密算法支持（encryptBySM2/decryptBySM2）
 - 新增SM4国密对称加密算法支持（encryptBySM4/decryptBySM4）
@@ -368,14 +358,3 @@ encryption:
 - 优化异常处理，提供更友好的中文错误信息
 - SecretKeyUtil新增SM2/SM4密钥生成方法（generateSM2KeyPair/generateSM4Key）
 - 更新配置文件支持SM2/SM4密钥配置项
-
-### 2026-03-11 (第二次优化)
-- 新增ChaCha20-Poly1305对称加密算法支持（encryptByChaCha20/decryptByChaCha20）
-- 新增EdDSA (Ed25519)数字签名支持（signByEdDSA/verifyByEdDSA）
-- 新增PBKDF2密码哈希支持（encryptByPBKDF2/matchByPBKDF2）
-- 新增批量加密/解密接口batchEncrypt/batchDecrypt，支持AES/SM4/ChaCha20/RSA/ECC/SM2
-- 新增EdDSASecretKey密钥对领域对象
-- 新增SecretKeyUtil密钥生成方法（generateChaCha20Key/generateEdDSAKeyPair/generatePBKDF2Salt）
-- 更新配置文件支持ChaCha20SecretKey/EdDSAPublicKey/EdDSAPrivateKey配置项
-- 优化SM4加密使用GCM模式，与AES保持一致
-- 优化批量操作异常处理，提供详细错误信息
