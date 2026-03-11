@@ -345,6 +345,16 @@ encryption:
 
 ## 更新记录
 
+### 2026-03-11 (第三次优化)
+- 新增HKDF密钥派生功能（deriveKeyByHKDF），支持自定义盐值、信息和输出长度
+- 新增X25519密钥交换支持（generateX25519KeyPair/deriveSharedSecretByX25519）
+- 新增统一加密/解密接口encrypt/decrypt，简化算法调用
+- 新增静态工厂方法（EncryptionService.create），方便快速创建实例
+- 新增InvalidKeyException异常类，更精确地处理密钥相关错误
+- 优化EncryptionException，添加静态工厂方法（invalidKey/encryptFailed/decryptFailed等）
+- 新增HKDFSalt/HKDFInfo/HKDFKeyLength配置项支持
+- 优化代码结构和注释，提高可读性
+
 ### 2026-03-11
 - 新增SM2国密非对称加密算法支持（encryptBySM2/decryptBySM2）
 - 新增SM4国密对称加密算法支持（encryptBySM4/decryptBySM4）

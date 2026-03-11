@@ -10,6 +10,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -793,6 +794,143 @@ public class EncryptionServiceImpl implements EncryptionService {
     private void validateInput(String input, String algorithm) {
         if (input == null || input.isEmpty()) {
             throw new EncryptionException(algorithm + "輸入不能為空");
+        }
+    }
+
+    // ==================== HKDF 密钥派生 ====================
+
+    @Override
+    public String deriveKeyByHKDF(String inputKey, String salt, String info, int length) {
+        validateInput(inputKey, "HKDF");
+        try {
+            byte[] ikm = Base64.getDecoder().decode(inputKey);
+            byte[] saltBytes = (salt != null && !salt.isEmpty()) 
+                ? salt.getBytes(StandardCharsets.UTF_8) 
+                : new byte[0];
+            byte[] infoBytes = (info != null && !info.isEmpty()) 
+                ? info.getBytes(StandardCharsets.UTF_8) 
+                : new byte[0];
+
+            // 使用纯 Java 实现 HKDF
+            byte[] derivedKey = doHKDF(ikm, saltBytes, infoBytes, length);
+            return Base64.getEncoder().encodeToString(derivedKey);
+        } catch (Exception e) {
+            throw EncryptionException.hashFailed("HKDF", e);
+        }
+    }
+
+    @Override
+    public String deriveKeyByHKDF(String inputKey) {
+        return deriveKeyByHKDF(inputKey, "encryption-tool", "hkdf", 32);
+    }
+
+    private byte[] doHKDF(byte[] ikm, byte[] salt, byte[] info, int length) throws Exception {
+        // HKDF-Extract: PRK = HMAC-Hash(salt, IKM)
+        String hashAlgorithm = "SHA-256";
+        javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+        
+        // 如果 salt 为空，使用默认全零字节（长度等于 HashLen）
+        byte[] saltBytes = salt.length == 0 ? new byte[mac.getMacLength()] : salt;
+        mac.init(new javax.crypto.spec.SecretKeySpec(saltBytes, "HmacSHA256"));
+        byte[] prk = mac.doFinal(ikm);
+        
+        // HKDF-Expand: T = T(1) | T(2) | T(3) | ...
+        byte[] t = new byte[0];
+        byte[] okm = new byte[length];
+        int tLen = 0;
+        int n = 1;
+        
+        while (tLen < length) {
+            mac.init(new javax.crypto.spec.SecretKeySpec(prk, "HmacSHA256"));
+            mac.update(t);
+            mac.update(info);
+            mac.update((byte) n);
+            t = mac.doFinal();
+            
+            System.arraycopy(t, 0, okm, tLen, Math.min(t.length, length - tLen));
+            tLen += t.length;
+            n++;
+        }
+        
+        return okm;
+    }
+
+    // ==================== X25519 密钥交换 ====================
+
+    @Override
+    public String[] generateX25519KeyPair() {
+        try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("X25519");
+            KeyPair keyPair = keyGen.generateKeyPair();
+            
+            String publicKey = Base64.getEncoder().encodeToString(
+                keyPair.getPublic().getEncoded());
+            String privateKey = Base64.getEncoder().encodeToString(
+                keyPair.getPrivate().getEncoded());
+            
+            return new String[] { publicKey, privateKey };
+        } catch (Exception e) {
+            throw EncryptionException.invalidKey("X25519");
+        }
+    }
+
+    @Override
+    public String deriveSharedSecretByX25519(String privateKey, String publicKey) {
+        validateInput(privateKey, "X25519");
+        validateInput(publicKey, "X25519");
+        try {
+            // 使用 BouncyCastle 的 X25519
+            org.bouncycastle.crypto.params.X25519PrivateKeyParameters x25519PrivateKey = 
+                new org.bouncycastle.crypto.params.X25519PrivateKeyParameters(
+                    Base64.getDecoder().decode(privateKey));
+            org.bouncycastle.crypto.params.X25519PublicKeyParameters x25519PublicKey = 
+                new org.bouncycastle.crypto.params.X25519PublicKeyParameters(
+                    Base64.getDecoder().decode(publicKey));
+            
+            org.bouncycastle.crypto.agreement.X25519Agreement agreement = 
+                new org.bouncycastle.crypto.agreement.X25519Agreement();
+            agreement.init(x25519PrivateKey);
+            
+            byte[] sharedSecret = new byte[32];
+            agreement.calculateAgreement(x25519PublicKey, sharedSecret, 0);
+            
+            return Base64.getEncoder().encodeToString(sharedSecret);
+        } catch (Exception e) {
+            throw EncryptionException.invalidKey("X25519");
+        }
+    }
+
+    // ==================== 统一加密/解密接口 ====================
+
+    @Override
+    public String encrypt(String algorithm, String key, String plaintext) {
+        String alg = algorithm.toUpperCase(Locale.ROOT);
+        switch (alg) {
+            case "AES":
+                return key != null ? encryptByAES(key, plaintext) : encryptByAES(plaintext);
+            case "SM4":
+                return key != null ? encryptBySM4(key, plaintext) : encryptBySM4(plaintext);
+            case "CHACHA20":
+            case "CHACHA20-POLY1305":
+                return key != null ? encryptByChaCha20(key, plaintext) : encryptByChaCha20(plaintext);
+            default:
+                throw new EncryptionException("不支持的统一加密算法: " + algorithm);
+        }
+    }
+
+    @Override
+    public String decrypt(String algorithm, String key, String ciphertext) {
+        String alg = algorithm.toUpperCase(Locale.ROOT);
+        switch (alg) {
+            case "AES":
+                return key != null ? decryptByAES(key, ciphertext) : decryptByAES(ciphertext);
+            case "SM4":
+                return key != null ? decryptBySM4(key, ciphertext) : decryptBySM4(ciphertext);
+            case "CHACHA20":
+            case "CHACHA20-POLY1305":
+                return key != null ? decryptByChaCha20(key, ciphertext) : decryptByChaCha20(ciphertext);
+            default:
+                throw new EncryptionException("不支持的统一解密算法: " + algorithm);
         }
     }
 

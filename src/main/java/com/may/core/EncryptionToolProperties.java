@@ -49,6 +49,15 @@ public class EncryptionToolProperties {
     // 默認字符集編碼
     private String charset = "UTF-8";
 
+    // HKDF 鹽值（可選）
+    private String HKDFSalt;
+
+    // HKDF 信息（可選）
+    private String HKDFInfo;
+
+    // HKDF 派生密鑰長度（默認32字節）
+    private Integer HKDFKeyLength = 32;
+
     /**
      * Builder 靜態內部類，用於鏈式配置
      */
@@ -117,6 +126,21 @@ public class EncryptionToolProperties {
 
         public Builder charset(String charset) {
             properties.setCharset(charset);
+            return this;
+        }
+
+        public Builder HKDFSalt(String salt) {
+            properties.setHKDFSalt(salt);
+            return this;
+        }
+
+        public Builder HKDFInfo(String info) {
+            properties.setHKDFInfo(info);
+            return this;
+        }
+
+        public Builder HKDFKeyLength(Integer length) {
+            properties.setHKDFKeyLength(length);
             return this;
         }
 

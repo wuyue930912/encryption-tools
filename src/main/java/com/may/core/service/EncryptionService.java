@@ -547,4 +547,121 @@ public interface EncryptionService {
      */
     java.util.List<String> batchDecrypt(String algorithm, String key, java.util.List<String> ciphertextList);
 
+    // ==================== HKDF 密钥派生 ====================
+
+    /**
+     * <!-- 使用HKDF算法派生密钥 -->
+     * <p>
+     * HKDF (HMAC-based Key Derivation Function) 是一种基于HMAC的密钥派生函数，
+     * 用于从一个主密钥派生出一个或多个子密钥。
+     * 遵循RFC 5869规范，适用于TLS、IPsec等协议。
+     * </p>
+     *
+     * @param inputKey  输入密钥材料（IKM）
+     * @param salt      盐值（可选，为null时使用空字节数组）
+     * @param info      上下文信息（可选，为null时使用空字节数组）
+     * @param length    派生密钥长度
+     * @return 派生出的密钥（Base64编码）
+     */
+    String deriveKeyByHKDF(String inputKey, String salt, String info, int length);
+
+    /**
+     * <!-- 使用HKDF算法派生密钥（使用默认参数） -->
+     * <p>
+     * 使用默认盐值和信息派生密钥，长度为32字节（256位）。
+     * </p>
+     *
+     * @param inputKey 输入密钥材料
+     * @return 派生出的密钥（Base64编码）
+     */
+    String deriveKeyByHKDF(String inputKey);
+
+    // ==================== X25519 密钥交换 ====================
+
+    /**
+     * <!-- 生成X25519密钥对 -->
+     * <p>
+     * X25519是基于Curve25519的密钥交换算法，
+     * 用于在两方之间安全地exchange密钥。
+     * 具有高性能和高安全性，广泛用于TLS、Signal等协议。
+     * </p>
+     *
+     * @return 密钥对对象，包含公钥和私钥
+     */
+    String[] generateX25519KeyPair();
+
+    /**
+     * <!-- 使用X25519私钥和对方公钥计算共享密钥 -->
+     * <p>
+     * 执行 ECDH 密钥交换，生成共享secret。
+     * </p>
+     *
+     * @param privateKey 己方私钥（Base64编码）
+     * @param publicKey  对方公钥（Base64编码）
+     * @return 共享密钥（Base64编码）
+     */
+    String deriveSharedSecretByX25519(String privateKey, String publicKey);
+
+    // ==================== 统一加密/解密接口（带模式选择） ====================
+
+    /**
+     * <!-- 使用指定算法和模式加密字符串 -->
+     * <p>
+     * 统一的加密接口，支持多种对称加密算法。
+     * 简化了不同算法的调用方式。
+     * </p>
+     *
+     * @param algorithm 加密算法（AES、SM4、ChaCha20）
+     * @param key       加密密钥（可选，部分算法可从配置获取）
+     * @param plaintext 明文字符串
+     * @return 加密后的字符串（Base64编码）
+     */
+    String encrypt(String algorithm, String key, String plaintext);
+
+    /**
+     * <!-- 使用指定算法和模式解密字符串 -->
+     * <p>
+     * 统一的解密接口，支持多种对称加密算法。
+     * </p>
+     *
+     * @param algorithm  解密算法（AES、SM4、ChaCha20）
+     * @param key        解密密钥（可选，部分算法可从配置获取）
+     * @param ciphertext 密文字符串（Base64编码）
+     * @return 解密后的字符串
+     */
+    String decrypt(String algorithm, String key, String ciphertext);
+
+    // ==================== 静态工厂方法 ====================
+
+    /**
+     * <!-- 创建加密服务实例（使用默认配置） -->
+     *
+     * @return 加密服务实例
+     */
+    static EncryptionService create() {
+        return new com.may.core.service.impl.EncryptionServiceImpl(
+            com.may.core.EncryptionToolProperties.builder().build()
+        );
+    }
+
+    /**
+     * <!-- 创建加密服务实例（使用配置对象） -->
+     *
+     * @param properties 配置属性
+     * @return 加密服务实例
+     */
+    static EncryptionService create(com.may.core.EncryptionToolProperties properties) {
+        return new com.may.core.service.impl.EncryptionServiceImpl(properties);
+    }
+
+    /**
+     * <!-- 创建加密服务实例（使用Builder） -->
+     *
+     * @param builder 配置构建器
+     * @return 加密服务实例
+     */
+    static EncryptionService create(com.may.core.EncryptionToolProperties.Builder builder) {
+        return new com.may.core.service.impl.EncryptionServiceImpl(builder.build());
+    }
+
 }
