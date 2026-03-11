@@ -28,4 +28,81 @@ public class EncryptionToolProperties {
     // ECC私鑰
     private String ECCPrivateKey;
 
+    // SM2公鑰
+    private String SM2PublicKey;
+
+    // SM2私鑰
+    private String SM2PrivateKey;
+
+    // SM4密鑰
+    private String SM4SecretKey;
+
+    // 默認字符集編碼
+    private String charset = "UTF-8";
+
+    /**
+     * Builder 靜態內部類，用於鏈式配置
+     */
+    public static class Builder {
+        private final EncryptionToolProperties properties = new EncryptionToolProperties();
+
+        public Builder BCryptSalt(String salt) {
+            properties.setBCryptSalt(salt);
+            return this;
+        }
+
+        public Builder AESSecretKey(String key) {
+            properties.setAESSecretKey(key);
+            return this;
+        }
+
+        public Builder RSAPublicKey(String key) {
+            properties.setRSAPublicKey(key);
+            return this;
+        }
+
+        public Builder RSAPrivateKey(String key) {
+            properties.setRSAPrivateKey(key);
+            return this;
+        }
+
+        public Builder ECCPublicKey(String key) {
+            properties.setECCPublicKey(key);
+            return this;
+        }
+
+        public Builder ECCPrivateKey(String key) {
+            properties.setECCPrivateKey(key);
+            return this;
+        }
+
+        public Builder SM2PublicKey(String key) {
+            properties.setSM2PublicKey(key);
+            return this;
+        }
+
+        public Builder SM2PrivateKey(String key) {
+            properties.setSM2PrivateKey(key);
+            return this;
+        }
+
+        public Builder SM4SecretKey(String key) {
+            properties.setSM4SecretKey(key);
+            return this;
+        }
+
+        public Builder charset(String charset) {
+            properties.setCharset(charset);
+            return this;
+        }
+
+        public EncryptionToolProperties build() {
+            return properties;
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
 }

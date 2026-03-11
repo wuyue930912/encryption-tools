@@ -9,6 +9,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SM4ParameterSpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -16,6 +17,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Objects;
 
 public class EncryptionServiceImpl implements EncryptionService {
@@ -26,6 +28,11 @@ public class EncryptionServiceImpl implements EncryptionService {
     private static final String RSA_ALGORITHM = "RSA";
     private static final String ECIES_ALGORITHM = "ECIES";
     private static final String EC_ALGORITHM = "EC";
+    private static final String SM4_ALGORITHM = "SM4/GCM/NoPadding";
+    private static final String SM2_ALGORITHM = "SM2";
+    private static final String SM3_ALGORITHM = "SM3";
+    private static final int SM4_IV_LENGTH = 16;
+    private static final int SM4_TAG_LENGTH = 128;
 
     private final EncryptionToolProperties properties;
 
@@ -43,6 +50,7 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String encryptByBCrypt(String str) {
+        validateInput(str, "BCrypt");
         try {
             String salt = properties.getBCryptSalt();
             return BCrypt.hashpw(str, Objects.isNull(salt) ? BCrypt.gensalt() : salt);
@@ -53,6 +61,11 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public Boolean matchByBCrypt(String str, String encodeStr) {
+        validateInput(str, "BCrypt");
+        validateInput(encodeStr, "BCrypt");
+        if (Objects.isNull(encodeStr) || encodeStr.isEmpty()) {
+            throw new EncryptionException("BCrypt密文不能為空");
+        }
         return BCrypt.checkpw(str, encodeStr);
     }
 
@@ -79,6 +92,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doAESEncrypt(SecretKey secretKey, String plaintext) {
+        validateInput(plaintext, "AES");
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
             SecureRandom.getInstanceStrong().nextBytes(iv);
@@ -101,6 +115,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doAESDecrypt(SecretKey secretKey, String ciphertext) {
+        validateInput(ciphertext, "AES");
         try {
             byte[] decoded = Base64.getDecoder().decode(ciphertext);
 
@@ -119,6 +134,82 @@ public class EncryptionServiceImpl implements EncryptionService {
             throw new EncryptionException("AES密鑰格式錯誤", e);
         } catch (Exception e) {
             throw new EncryptionException("AES解密失敗", e);
+        }
+    }
+
+    // ==================== SM4 (GCM) ====================
+
+    @Override
+    public String encryptBySM4(String keyValue, String str) {
+        return doSM4Encrypt(SecretKeyUtil.convertSM4Key(keyValue), str);
+    }
+
+    @Override
+    public String encryptBySM4(String str) {
+        String key = properties.getSM4SecretKey();
+        if (key == null || key.isEmpty()) {
+            throw new EncryptionException("未配置SM4密鑰，請在配置文件中設置 encryption.tool.SM4SecretKey");
+        }
+        return doSM4Encrypt(SecretKeyUtil.convertSM4Key(key), str);
+    }
+
+    @Override
+    public String decryptBySM4(String keyValue, String str) {
+        return doSM4Decrypt(SecretKeyUtil.convertSM4Key(keyValue), str);
+    }
+
+    @Override
+    public String decryptBySM4(String str) {
+        String key = properties.getSM4SecretKey();
+        if (key == null || key.isEmpty()) {
+            throw new EncryptionException("未配置SM4密鑰，請在配置文件中設置 encryption.tool.SM4SecretKey");
+        }
+        return doSM4Decrypt(SecretKeyUtil.convertSM4Key(key), str);
+    }
+
+    private String doSM4Encrypt(SecretKey secretKey, String plaintext) {
+        validateInput(plaintext, "SM4");
+        try {
+            byte[] iv = new byte[SM4_IV_LENGTH];
+            SecureRandom.getInstanceStrong().nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+
+            byte[] cipherText = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+            ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length);
+            byteBuffer.put(iv);
+            byteBuffer.put(cipherText);
+
+            return Base64.getEncoder().encodeToString(byteBuffer.array());
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("SM4密鑰格式錯誤", e);
+        } catch (Exception e) {
+            throw new EncryptionException("SM4加密失敗", e);
+        }
+    }
+
+    private String doSM4Decrypt(SecretKey secretKey, String ciphertext) {
+        validateInput(ciphertext, "SM4");
+        try {
+            byte[] decoded = Base64.getDecoder().decode(ciphertext);
+
+            ByteBuffer byteBuffer = ByteBuffer.wrap(decoded);
+            byte[] iv = new byte[SM4_IV_LENGTH];
+            byteBuffer.get(iv);
+            byte[] cipherText = new byte[byteBuffer.remaining()];
+            byteBuffer.get(cipherText);
+
+            Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+
+            byte[] plainText = cipher.doFinal(cipherText);
+            return new String(plainText, StandardCharsets.UTF_8);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("SM4密鑰格式錯誤", e);
+        } catch (Exception e) {
+            throw new EncryptionException("SM4解密失敗", e);
         }
     }
 
@@ -173,6 +264,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doRSAEncrypt(PublicKey publicKey, String plaintext) {
+        validateInput(plaintext, "RSA");
         try {
             Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -190,6 +282,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doRSADecrypt(PrivateKey privateKey, String ciphertext) {
+        validateInput(ciphertext, "RSA");
         try {
             byte[] encryptedBytes = Base64.getDecoder().decode(ciphertext);
             Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
@@ -212,7 +305,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     @Override
     public String encryptByECC(String str) {
         String publicKey = properties.getECCPublicKey();
-        if (Objects.isNull(publicKey)) {
+        if (publicKey == null || publicKey.isEmpty()) {
             throw new EncryptionException("未配置ECC公鑰");
         }
         return doECCEncrypt(publicKey, str);
@@ -226,7 +319,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     @Override
     public String decryptByECC(String encryptedStr) {
         String privateKey = properties.getECCPrivateKey();
-        if (Objects.isNull(privateKey)) {
+        if (privateKey == null || privateKey.isEmpty()) {
             throw new EncryptionException("未配置ECC私鑰");
         }
         return doECCDecrypt(privateKey, encryptedStr);
@@ -238,6 +331,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doECCEncrypt(String publicKeyStr, String plaintext) {
+        validateInput(plaintext, "ECC");
         try {
             byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
@@ -258,6 +352,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     private String doECCDecrypt(String privateKeyStr, String ciphertext) {
+        validateInput(ciphertext, "ECC");
         try {
             byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyStr);
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
@@ -278,52 +373,133 @@ public class EncryptionServiceImpl implements EncryptionService {
         }
     }
 
+    // ==================== SM2 ====================
+
+    @Override
+    public String encryptBySM2(String publicKey, String str) {
+        return doSM2Encrypt(SecretKeyUtil.convertSM2PublicKey(publicKey), str);
+    }
+
+    @Override
+    public String encryptBySM2(String str) {
+        String publicKey = properties.getSM2PublicKey();
+        if (publicKey == null || publicKey.isEmpty()) {
+            throw new EncryptionException("未配置SM2公鑰，請在配置文件中設置 encryption.tool.SM2PublicKey");
+        }
+        return doSM2Encrypt(SecretKeyUtil.convertSM2PublicKey(publicKey), str);
+    }
+
+    @Override
+    public String decryptBySM2(String privateKey, String encryptedStr) {
+        return doSM2Decrypt(SecretKeyUtil.convertSM2PrivateKey(privateKey), encryptedStr);
+    }
+
+    @Override
+    public String decryptBySM2(String encryptedStr) {
+        String privateKey = properties.getSM2PrivateKey();
+        if (privateKey == null || privateKey.isEmpty()) {
+            throw new EncryptionException("未配置SM2私鑰，請在配置文件中設置 encryption.tool.SM2PrivateKey");
+        }
+        return doSM2Decrypt(SecretKeyUtil.convertSM2PrivateKey(privateKey), encryptedStr);
+    }
+
+    private String doSM2Encrypt(PublicKey publicKey, String plaintext) {
+        validateInput(plaintext, "SM2");
+        try {
+            Cipher cipher = Cipher.getInstance(SM2_ALGORITHM, "BC");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(encrypted);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("SM2公鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("SM2加密失敗", e);
+        }
+    }
+
+    private String doSM2Decrypt(PrivateKey privateKey, String ciphertext) {
+        validateInput(ciphertext, "SM2");
+        try {
+            byte[] encryptedBytes = Base64.getDecoder().decode(ciphertext);
+            Cipher cipher = Cipher.getInstance(SM2_ALGORITHM, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            byte[] decrypted = cipher.doFinal(encryptedBytes);
+            return new String(decrypted, StandardCharsets.UTF_8);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("SM2私鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("SM2解密失敗", e);
+        }
+    }
+
     // ==================== Hash (SHA / MD5) ====================
 
     @Override
     public String encryptSHA1(String str) {
-        return doHash("SHA-1", str);
+        return doHash("SHA-1", str, null);
     }
 
     @Override
     public Boolean verifySHA1(String encryptedStr, String str) {
-        return encryptSHA1(str).equals(encryptedStr);
+        return verifyHash("SHA-1", encryptedStr, str, null);
     }
 
     @Override
     public String encryptSHA256(String str) {
-        return doHash("SHA-256", str);
+        return doHash("SHA-256", str, null);
     }
 
     @Override
     public Boolean verifySHA256(String encryptedStr, String str) {
-        return encryptSHA256(str).equals(encryptedStr);
+        return verifyHash("SHA-256", encryptedStr, str, null);
     }
 
     @Override
     public String encryptSHA512(String str) {
-        return doHash("SHA-512", str);
+        return doHash("SHA-512", str, null);
     }
 
     @Override
     public Boolean verifySHA512(String encryptedStr, String str) {
-        return encryptSHA512(str).equals(encryptedStr);
+        return verifyHash("SHA-512", encryptedStr, str, null);
+    }
+
+    @Override
+    public String encryptSM3(String str) {
+        return doHash(SM3_ALGORITHM, str, null);
+    }
+
+    @Override
+    public Boolean verifySM3(String encryptedStr, String str) {
+        return verifyHash(SM3_ALGORITHM, encryptedStr, str, null);
     }
 
     @Override
     public String encryptMD5(String str) {
-        return doHash("MD5", str);
+        return doHash("MD5", str, null);
     }
 
     @Override
     public Boolean verifyMD5(String encryptedStr, String str) {
-        return encryptMD5(str).equals(encryptedStr);
+        return verifyHash("MD5", encryptedStr, str, null);
     }
 
-    private String doHash(String algorithm, String str) {
+    @Override
+    public String hash(String algorithm, String str, String salt) {
+        return doHash(algorithm, str, salt);
+    }
+
+    @Override
+    public Boolean verifyHash(String algorithm, String encryptedStr, String str, String salt) {
+        return doHash(algorithm, str, salt).equalsIgnoreCase(encryptedStr);
+    }
+
+    private String doHash(String algorithm, String str, String salt) {
+        validateInput(str, algorithm);
         try {
-            MessageDigest md = MessageDigest.getInstance(algorithm);
-            byte[] hash = md.digest(str.getBytes(StandardCharsets.UTF_8));
+            String dataToHash = (salt == null || salt.isEmpty()) ? str : str + salt;
+            MessageDigest md = MessageDigest.getInstance(algorithm.toUpperCase(Locale.ROOT));
+            byte[] hash = md.digest(dataToHash.getBytes(StandardCharsets.UTF_8));
             return bytesToHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new EncryptionException(algorithm + "演算法在當前環境中不可用", e);
@@ -336,6 +512,14 @@ public class EncryptionServiceImpl implements EncryptionService {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString();
+    }
+
+    // ==================== 驗證工具 ====================
+
+    private void validateInput(String input, String algorithm) {
+        if (input == null || input.isEmpty()) {
+            throw new EncryptionException(algorithm + "輸入不能為空");
+        }
     }
 
 }
