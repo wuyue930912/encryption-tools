@@ -335,4 +335,26 @@ encryption:
         ECCPublicKey: MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEedCM+iL9FOgq02ZBObElh78nDkZ2gOJ94AL+1Hi9IohsPA6kDTAJ7PRhxwzEX+9+bZ+QnMwluYqldCpr5mip3Q==
         #    ECC私钥
         ECCPrivateKey: MD4CAQAwEAYHKoZIzj0CAQYFK4EEAAoEJzAlAgEBBCAdkyerWJjIre12kQqXcnydD2rB1paX/FFJPehfccdQSg==
+        #    SM2公钥（国密）
+        SM2PublicKey: BIl6j+JjYE3tbXoI/8/4A5xrX9M6Nx7Dht+qHNQK3qC4pM3YXW9eN8Z6vL3mPqGqz7XkP7K8h9N2pL3wQ==
+        #    SM2私钥（国密）
+        SM2PrivateKey: MH4CAQAwEAYHKoZIzj0CAQYFK4EEAAoEJzAlAgEBBCAdkyerWJjIre12kQqXcnydD2rB1paX/FFJPehfccdQSg==
+        #    SM4密钥（国密，16字节）
+        SM4SecretKey: abCdEfGhIjKlMnOp==
   ```
+
+## 更新记录
+
+### 2026-03-11
+- 新增SM2国密非对称加密算法支持（encryptBySM2/decryptBySM2）
+- 新增SM4国密对称加密算法支持（encryptBySM4/decryptBySM4）
+- 新增SM3国密哈希算法支持（encryptSM3/verifySM3）
+- 新增统一哈希接口hash()和verifyHash()，支持盐值
+- 新增SM2SecretKey密钥对领域对象
+- 新增Builder模式的属性配置支持
+- 新增Hex编码/解码工具方法（bytesToHex/hexToBytes）
+- 新增Base64编码/解码工具方法
+- 新增输入参数验证，防止空指针异常
+- 优化异常处理，提供更友好的中文错误信息
+- SecretKeyUtil新增SM2/SM4密钥生成方法（generateSM2KeyPair/generateSM4Key）
+- 更新配置文件支持SM2/SM4密钥配置项
