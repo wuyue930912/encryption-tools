@@ -358,3 +358,14 @@ encryption:
 - 优化异常处理，提供更友好的中文错误信息
 - SecretKeyUtil新增SM2/SM4密钥生成方法（generateSM2KeyPair/generateSM4Key）
 - 更新配置文件支持SM2/SM4密钥配置项
+
+### 2026-03-11 (第二次优化)
+- 新增ChaCha20-Poly1305对称加密算法支持（encryptByChaCha20/decryptByChaCha20）
+- 新增EdDSA (Ed25519)数字签名支持（signByEdDSA/verifyByEdDSA）
+- 新增PBKDF2密码哈希支持（encryptByPBKDF2/matchByPBKDF2）
+- 新增批量加密/解密接口batchEncrypt/batchDecrypt，支持AES/SM4/ChaCha20/RSA/ECC/SM2
+- 新增EdDSASecretKey密钥对领域对象
+- 新增SecretKeyUtil密钥生成方法（generateChaCha20Key/generateEdDSAKeyPair/generatePBKDF2Salt）
+- 更新配置文件支持ChaCha20SecretKey/EdDSAPublicKey/EdDSAPrivateKey配置项
+- 优化SM4加密使用GCM模式，与AES保持一致
+- 优化批量操作异常处理，提供详细错误信息

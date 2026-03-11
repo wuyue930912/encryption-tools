@@ -37,6 +37,15 @@ public class EncryptionToolProperties {
     // SM4密鑰
     private String SM4SecretKey;
 
+    // ChaCha20-Poly1305密鑰
+    private String ChaCha20SecretKey;
+
+    // EdDSA公鑰
+    private String EdDSAPublicKey;
+
+    // EdDSA私鑰
+    private String EdDSAPrivateKey;
+
     // 默認字符集編碼
     private String charset = "UTF-8";
 
@@ -88,6 +97,21 @@ public class EncryptionToolProperties {
 
         public Builder SM4SecretKey(String key) {
             properties.setSM4SecretKey(key);
+            return this;
+        }
+
+        public Builder ChaCha20SecretKey(String key) {
+            properties.setChaCha20SecretKey(key);
+            return this;
+        }
+
+        public Builder EdDSAPublicKey(String key) {
+            properties.setEdDSAPublicKey(key);
+            return this;
+        }
+
+        public Builder EdDSAPrivateKey(String key) {
+            properties.setEdDSAPrivateKey(key);
             return this;
         }
 

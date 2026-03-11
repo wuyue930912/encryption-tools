@@ -394,4 +394,157 @@ public interface EncryptionService {
      */
     Boolean verifyHash(String algorithm, String encryptedStr, String str, String salt);
 
+    // ==================== ChaCha20-Poly1305 对称加密 ====================
+
+    /**
+     * <!-- 使用ChaCha20-Poly1305算法对字符串加密 -->
+     * <p>
+     * ChaCha20-Poly1305是一种现代的对称加密算法，由Daniel Bernstein设计，
+     * 结合了ChaCha20流密码和Poly1305消息认证码。
+     * 在移动设备和资源受限环境中比AES表现更好，已被TLS 1.3采用。
+     * </p>
+     *
+     * @param keyValue ChaCha20-Poly1305密钥（256位，即32字节的Base64编码）
+     * @param str      要加密的字符串
+     * @return 加密后的数据（Base64编码）
+     */
+    String encryptByChaCha20(String keyValue, String str);
+
+    /**
+     * <!-- 使用ChaCha20-Poly1305算法对字符串加密 -->
+     * <p>
+     * 使用配置文件中指定的ChaCha20-Poly1305密钥进行加密。
+     * </p>
+     *
+     * @param str 要加密的字符串
+     * @return 加密后的数据（Base64编码）
+     */
+    String encryptByChaCha20(String str);
+
+    /**
+     * <!-- 使用ChaCha20-Poly1305算法对字符串解密 -->
+     * <p>
+     * ChaCha20-Poly1305是一种现代的对称加密算法，具有较高的安全性和性能。
+     * </p>
+     *
+     * @param keyValue ChaCha20-Poly1305密钥
+     * @param str      加密后的字符串（Base64编码）
+     * @return 解密后的字符串
+     */
+    String decryptByChaCha20(String keyValue, String str);
+
+    /**
+     * <!-- 使用ChaCha20-Poly1305算法对字符串解密 -->
+     * <p>
+     * 使用配置文件中指定的ChaCha20-Poly1305密钥进行解密。
+     * </p>
+     *
+     * @param str 加密后的字符串（Base64编码）
+     * @return 解密后的字符串
+     */
+    String decryptByChaCha20(String str);
+
+    // ==================== EdDSA (Ed25519) 数字签名 ====================
+
+    /**
+     * <!-- 使用Ed25519私钥对数据进行签名 -->
+     * <p>
+     * EdDSA是一种现代的数字签名算法，基于Curve25519椭圆曲线。
+     * 具有高性能、高安全性、无需随机数等优点。
+     * </p>
+     *
+     * @param privateKey Ed25519私钥
+     * @param str        要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByEdDSA(String privateKey, String str);
+
+    /**
+     * <!-- 使用Ed25519私钥对数据进行签名 -->
+     * <p>
+     * 使用配置文件中指定的Ed25519私钥进行签名。
+     * </p>
+     *
+     * @param str 要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByEdDSA(String str);
+
+    /**
+     * <!-- 验证Ed25519签名 -->
+     * <p>
+     * EdDSA是一种现代的数字签名算法，基于Curve25519椭圆曲线。
+     * </p>
+     *
+     * @param publicKey  Ed25519公钥
+     * @param signature  签名（Base64编码）
+     * @param original   原始数据
+     * @return 验证结果
+     */
+    Boolean verifyByEdDSA(String publicKey, String signature, String original);
+
+    /**
+     * <!-- 验证Ed25519签名 -->
+     * <p>
+     * 使用配置文件中指定的Ed25519公钥进行验证。
+     * </p>
+     *
+     * @param signature 签名（Base64编码）
+     * @param original  原始数据
+     * @return 验证结果
+     */
+    Boolean verifyByEdDSA(String signature, String original);
+
+    // ==================== PBKDF2 密码哈希 ====================
+
+    /**
+     * <!-- 使用PBKDF2算法加密字符串 -->
+     * <p>
+     * PBKDF2（Password-Based Key Derivation Function 2）是一种密钥衍生函数，
+     * 被用于密码哈希存储和验证。是NIST推荐的标准算法。
+     * </p>
+     *
+     * @param str   要加密的明文字符串
+     * @param salt  盐值（建议使用SecureRandom生成的16字节）
+     * @return 加密后的字符串
+     */
+    String encryptByPBKDF2(String str, String salt);
+
+    /**
+     * <!-- 校验PBKDF2算法加密的字符串 -->
+     *
+     * @param str       明文字符串
+     * @param encodeStr 密文字符串
+     * @return true：匹配，false：不匹配
+     */
+    Boolean matchByPBKDF2(String str, String encodeStr);
+
+    // ==================== 批量加密/解密接口 ====================
+
+    /**
+     * <!-- 批量加密字符串列表 -->
+     * <p>
+     * 使用指定算法对多个字符串进行加密，适用于数据批量处理场景。
+     * </p>
+     *
+     * @param algorithm      加密算法（AES、SM4、ChaCha20等）
+     * @param key            加密密钥（部分算法可为空）
+     * @param plaintextList  明文字符串列表
+     * @return 加密后的字符串列表
+     */
+    java.util.List<String> batchEncrypt(String algorithm, String key, java.util.List<String> plaintextList);
+
+    /**
+     * <!-- 批量解密字符串列表 -->
+     * <p>
+     * 使用指定算法对多个字符串进行解密，适用于数据批量处理场景。
+     * </p>
+     *
+     * @param algorithm       解密算法
+     * @param key             解密密钥（部分算法可为空）
+     * @param ciphertextList  密文字符串列表
+     * @return 解密后的字符串列表
+     */
+    java.util.List<String> batchDecrypt(String algorithm, String key, java.util.List<String> ciphertextList);
+
 }

@@ -1,6 +1,7 @@
 package com.may.core.util;
 
 import com.may.core.domain.ECCSecretKey;
+import com.may.core.domain.EdDSASecretKey;
 import com.may.core.domain.RSASecretKey;
 import com.may.core.domain.SM2SecretKey;
 import com.may.core.exception.EncryptionException;
@@ -68,6 +69,66 @@ public class SecretKeyUtil {
             throw new EncryptionException("SM4演算法在當前環境中不可用", e);
         } catch (Exception e) {
             throw new EncryptionException("SM4密鑰生成失敗", e);
+        }
+    }
+
+    /**
+     * <!-- 生成隨機ChaCha20-Poly1305密鑰 -->
+     *
+     * @return Base64 編碼的 ChaCha20-Poly1305 密鑰（256位）
+     */
+    public static String generateChaCha20Key() {
+        try {
+            KeyGenerator keyGenerator = KeyGenerator.getInstance("ChaCha20", "BC");
+            SecureRandom secureRandom = SecureRandom.getInstanceStrong();
+            keyGenerator.init(256, secureRandom);
+            SecretKey secretKey = keyGenerator.generateKey();
+            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new EncryptionException("ChaCha20演算法在當前環境中不可用", e);
+        } catch (Exception e) {
+            throw new EncryptionException("ChaCha20密鑰生成失敗", e);
+        }
+    }
+
+    /**
+     * <!-- 生成Ed25519密鑰對 -->
+     *
+     * @return EdDSA 密鑰對
+     */
+    public static EdDSASecretKey generateEdDSAKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EdDSA", "BC");
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+            String publicKeyString = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+            String privateKeyString = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+            return EdDSASecretKey.builder()
+                    .publicKey(keyPair.getPublic())
+                    .publicKeyStr(publicKeyString)
+                    .privateKey(keyPair.getPrivate())
+                    .privateKeyStr(privateKeyString)
+                    .build();
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new EncryptionException("EdDSA演算法在當前環境中不可用", e);
+        } catch (Exception e) {
+            throw new EncryptionException("EdDSA密鑰生成失敗", e);
+        }
+    }
+
+    /**
+     * <!-- 生成PBKDF2鹽值 -->
+     *
+     * @return Base64 編碼的 PBKDF2 鹽值（16字節）
+     */
+    public static String generatePBKDF2Salt() {
+        try {
+            byte[] salt = new byte[16];
+            SecureRandom.getInstanceStrong().nextBytes(salt);
+            return Base64.getEncoder().encodeToString(salt);
+        } catch (NoSuchAlgorithmException e) {
+            throw new EncryptionException("SecureRandom生成失敗", e);
         }
     }
 
@@ -201,6 +262,27 @@ public class SecretKeyUtil {
                 throw (EncryptionException) e;
             }
             throw new EncryptionException("SM4密鑰格式無效，請確保密鑰為正確的Base64編碼", e);
+        }
+    }
+
+    /**
+     * <!-- 將 Base64 字串轉換為 ChaCha20 SecretKey -->
+     *
+     * @param keyMaterial Base64 編碼的 ChaCha20 密鑰字串
+     * @return ChaCha20 SecretKey
+     */
+    public static SecretKey convertChaCha20Key(String keyMaterial) {
+        try {
+            byte[] key = Base64.getDecoder().decode(keyMaterial);
+            if (key.length != 32) {
+                throw new EncryptionException("ChaCha20密鑰長度必須為32字節");
+            }
+            return new SecretKeySpec(key, "ChaCha20");
+        } catch (Exception e) {
+            if (e instanceof EncryptionException) {
+                throw (EncryptionException) e;
+            }
+            throw new EncryptionException("ChaCha20密鑰格式無效，請確保密鑰為正確的Base64編碼", e);
         }
     }
 

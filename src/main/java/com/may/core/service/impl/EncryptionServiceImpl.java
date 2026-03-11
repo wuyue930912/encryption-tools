@@ -9,14 +9,16 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SM4ParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -33,6 +35,13 @@ public class EncryptionServiceImpl implements EncryptionService {
     private static final String SM3_ALGORITHM = "SM3";
     private static final int SM4_IV_LENGTH = 16;
     private static final int SM4_TAG_LENGTH = 128;
+    private static final String CHACHA20_ALGORITHM = "ChaCha20-Poly1305";
+    private static final int CHACHA20_IV_LENGTH = 12;
+    private static final int CHACHA20_TAG_LENGTH = 128;
+    private static final String EDDSA_ALGORITHM = "EdDSA";
+    private static final String ED25519 = "Ed25519";
+    private static final int PBKDF2_ITERATIONS = 100000;
+    private static final int PBKDF2_KEY_LENGTH = 256;
 
     private final EncryptionToolProperties properties;
 
@@ -174,7 +183,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             SecureRandom.getInstanceStrong().nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(SM4_TAG_LENGTH, iv));
 
             byte[] cipherText = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
@@ -202,7 +211,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             byteBuffer.get(cipherText);
 
             Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(SM4_TAG_LENGTH, iv));
 
             byte[] plainText = cipher.doFinal(cipherText);
             return new String(plainText, StandardCharsets.UTF_8);
@@ -512,6 +521,271 @@ public class EncryptionServiceImpl implements EncryptionService {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString();
+    }
+
+    // ==================== ChaCha20-Poly1305 ====================
+
+    @Override
+    public String encryptByChaCha20(String keyValue, String str) {
+        return doChaCha20Encrypt(SecretKeyUtil.convertChaCha20Key(keyValue), str);
+    }
+
+    @Override
+    public String encryptByChaCha20(String str) {
+        String key = properties.getChaCha20SecretKey();
+        if (key == null || key.isEmpty()) {
+            throw new EncryptionException("未配置ChaCha20密鑰，請在配置文件中設置 encryption.tool.ChaCha20SecretKey");
+        }
+        return doChaCha20Encrypt(SecretKeyUtil.convertChaCha20Key(key), str);
+    }
+
+    @Override
+    public String decryptByChaCha20(String keyValue, String str) {
+        return doChaCha20Decrypt(SecretKeyUtil.convertChaCha20Key(keyValue), str);
+    }
+
+    @Override
+    public String decryptByChaCha20(String str) {
+        String key = properties.getChaCha20SecretKey();
+        if (key == null || key.isEmpty()) {
+            throw new EncryptionException("未配置ChaCha20密鑰，請在配置文件中設置 encryption.tool.ChaCha20SecretKey");
+        }
+        return doChaCha20Decrypt(SecretKeyUtil.convertChaCha20Key(key), str);
+    }
+
+    private String doChaCha20Encrypt(SecretKey secretKey, String plaintext) {
+        validateInput(plaintext, "ChaCha20");
+        try {
+            byte[] iv = new byte[CHACHA20_IV_LENGTH];
+            SecureRandom.getInstanceStrong().nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance(CHACHA20_ALGORITHM, "BC");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(CHACHA20_TAG_LENGTH, iv));
+
+            byte[] cipherText = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+            ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length);
+            byteBuffer.put(iv);
+            byteBuffer.put(cipherText);
+
+            return Base64.getEncoder().encodeToString(byteBuffer.array());
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("ChaCha20密鑰格式錯誤", e);
+        } catch (Exception e) {
+            throw new EncryptionException("ChaCha20加密失敗", e);
+        }
+    }
+
+    private String doChaCha20Decrypt(SecretKey secretKey, String ciphertext) {
+        validateInput(ciphertext, "ChaCha20");
+        try {
+            byte[] decoded = Base64.getDecoder().decode(ciphertext);
+
+            ByteBuffer byteBuffer = ByteBuffer.wrap(decoded);
+            byte[] iv = new byte[CHACHA20_IV_LENGTH];
+            byteBuffer.get(iv);
+            byte[] cipherText = new byte[byteBuffer.remaining()];
+            byteBuffer.get(cipherText);
+
+            Cipher cipher = Cipher.getInstance(CHACHA20_ALGORITHM, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(CHACHA20_TAG_LENGTH, iv));
+
+            byte[] plainText = cipher.doFinal(cipherText);
+            return new String(plainText, StandardCharsets.UTF_8);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("ChaCha20密鑰格式錯誤", e);
+        } catch (Exception e) {
+            throw new EncryptionException("ChaCha20解密失敗", e);
+        }
+    }
+
+    // ==================== EdDSA (Ed25519) ====================
+
+    @Override
+    public String signByEdDSA(String privateKey, String str) {
+        return doEdDSASign(privateKey, str);
+    }
+
+    @Override
+    public String signByEdDSA(String str) {
+        String privateKey = properties.getEdDSAPrivateKey();
+        if (privateKey == null || privateKey.isEmpty()) {
+            throw new EncryptionException("未配置EdDSA私鑰，請在配置文件中設置 encryption.tool.EdDSAPrivateKey");
+        }
+        return doEdDSASign(privateKey, str);
+    }
+
+    @Override
+    public Boolean verifyByEdDSA(String publicKey, String signature, String original) {
+        return doEdDSAVerify(publicKey, signature, original);
+    }
+
+    @Override
+    public Boolean verifyByEdDSA(String signature, String original) {
+        String publicKey = properties.getEdDSAPublicKey();
+        if (publicKey == null || publicKey.isEmpty()) {
+            throw new EncryptionException("未配置EdDSA公鑰，請在配置文件中設置 encryption.tool.EdDSAPublicKey");
+        }
+        return doEdDSAVerify(publicKey, signature, original);
+    }
+
+    private String doEdDSASign(String privateKeyStr, String plaintext) {
+        validateInput(plaintext, "EdDSA");
+        try {
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyStr);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            PrivateKey privateKey = KeyFactory.getInstance(EDDSA_ALGORITHM, "BC").generatePrivate(keySpec);
+
+            Signature signature = Signature.getInstance(EDDSA_ALGORITHM, "BC");
+            signature.initSign(privateKey);
+            signature.update(plaintext.getBytes(StandardCharsets.UTF_8));
+            byte[] signed = signature.sign();
+            return Base64.getEncoder().encodeToString(signed);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("EdDSA私鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("EdDSA簽名失敗", e);
+        }
+    }
+
+    private Boolean doEdDSAVerify(String publicKeyStr, String signatureStr, String original) {
+        validateInput(original, "EdDSA");
+        try {
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
+            PublicKey publicKey = KeyFactory.getInstance(EDDSA_ALGORITHM, "BC").generatePublic(keySpec);
+
+            byte[] signatureBytes = Base64.getDecoder().decode(signatureStr);
+
+            Signature signature = Signature.getInstance(EDDSA_ALGORITHM, "BC");
+            signature.initVerify(publicKey);
+            signature.update(original.getBytes(StandardCharsets.UTF_8));
+            return signature.verify(signatureBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("EdDSA公鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("EdDSA驗籤失敗", e);
+        }
+    }
+
+    // ==================== PBKDF2 ====================
+
+    @Override
+    public String encryptByPBKDF2(String str, String salt) {
+        validateInput(str, "PBKDF2");
+        if (salt == null || salt.isEmpty()) {
+            throw new EncryptionException("PBKDF2鹽值不能為空");
+        }
+        try {
+            byte[] saltBytes = Base64.getDecoder().decode(salt);
+            PBEKeySpec spec = new PBEKeySpec(str.toCharArray(), saltBytes, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH);
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            byte[] hash = factory.generateSecret(spec).getEncoded();
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new EncryptionException("PBKDF2加密失敗", e);
+        }
+    }
+
+    @Override
+    public Boolean matchByPBKDF2(String str, String encodeStr) {
+        if (encodeStr == null || encodeStr.isEmpty()) {
+            throw new EncryptionException("PBKDF2密文不能為空");
+        }
+        // PBKDF2 stored format: salt:hash (both base64 encoded)
+        try {
+            String[] parts = encodeStr.split(":");
+            if (parts.length != 2) {
+                throw new EncryptionException("PBKDF2密文格式錯誤，應為鹽值:哈希值");
+            }
+            String salt = parts[0];
+            String hash = parts[1];
+            return encryptByPBKDF2(str, salt).equals(hash);
+        } catch (Exception e) {
+            throw new EncryptionException("PBKDF2校驗失敗", e);
+        }
+    }
+
+    // ==================== 批量加密/解密 ====================
+
+    @Override
+    public List<String> batchEncrypt(String algorithm, String key, List<String> plaintextList) {
+        if (plaintextList == null || plaintextList.isEmpty()) {
+            throw new EncryptionException("待加密列表不能為空");
+        }
+        List<String> result = new ArrayList<>();
+        for (String plaintext : plaintextList) {
+            try {
+                String encrypted;
+                String alg = algorithm.toUpperCase(Locale.ROOT);
+                switch (alg) {
+                    case "AES":
+                        encrypted = key != null ? encryptByAES(key, plaintext) : encryptByAES(plaintext);
+                        break;
+                    case "SM4":
+                        encrypted = key != null ? encryptBySM4(key, plaintext) : encryptBySM4(plaintext);
+                        break;
+                    case "CHACHA20":
+                        encrypted = key != null ? encryptByChaCha20(key, plaintext) : encryptByChaCha20(plaintext);
+                        break;
+                    case "RSA":
+                        encrypted = key != null ? encryptByRSA(key, plaintext) : encryptByRSA(plaintext);
+                        break;
+                    case "ECC":
+                        encrypted = key != null ? encryptByECC(key, plaintext) : encryptByECC(plaintext);
+                        break;
+                    case "SM2":
+                        encrypted = key != null ? encryptBySM2(key, plaintext) : encryptBySM2(plaintext);
+                        break;
+                    default:
+                        throw new EncryptionException("不支持的批量加密算法: " + algorithm);
+                }
+                result.add(encrypted);
+            } catch (Exception e) {
+                throw new EncryptionException("批量加密失敗: " + e.getMessage(), e);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<String> batchDecrypt(String algorithm, String key, List<String> ciphertextList) {
+        if (ciphertextList == null || ciphertextList.isEmpty()) {
+            throw new EncryptionException("待解密列表不能為空");
+        }
+        List<String> result = new ArrayList<>();
+        for (String ciphertext : ciphertextList) {
+            try {
+                String decrypted;
+                String alg = algorithm.toUpperCase(Locale.ROOT);
+                switch (alg) {
+                    case "AES":
+                        decrypted = key != null ? decryptByAES(key, ciphertext) : decryptByAES(ciphertext);
+                        break;
+                    case "SM4":
+                        decrypted = key != null ? decryptBySM4(key, ciphertext) : decryptBySM4(ciphertext);
+                        break;
+                    case "CHACHA20":
+                        decrypted = key != null ? decryptByChaCha20(key, ciphertext) : decryptByChaCha20(ciphertext);
+                        break;
+                    case "RSA":
+                        decrypted = key != null ? decryptByRSA(key, ciphertext) : decryptByRSA(ciphertext);
+                        break;
+                    case "ECC":
+                        decrypted = key != null ? decryptByECC(key, ciphertext) : decryptByECC(ciphertext);
+                        break;
+                    case "SM2":
+                        decrypted = key != null ? decryptBySM2(key, ciphertext) : decryptBySM2(ciphertext);
+                        break;
+                    default:
+                        throw new EncryptionException("不支持的批量解密算法: " + algorithm);
+                }
+                result.add(decrypted);
+            } catch (Exception e) {
+                throw new EncryptionException("批量解密失敗: " + e.getMessage(), e);
+            }
+        }
+        return result;
     }
 
     // ==================== 驗證工具 ====================
