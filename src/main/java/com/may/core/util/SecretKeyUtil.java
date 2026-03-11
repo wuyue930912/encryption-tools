@@ -295,4 +295,48 @@ public class SecretKeyUtil {
         return Base64.getDecoder().decode(base64Str);
     }
 
+    /**
+     * <!-- 生成EdDSA (Ed25519) 公鑰和私鑰 -->
+     *
+     * @return EdDSA 密鑰對
+     */
+    public static com.may.core.domain.EdDSASecretKey generateEdDSAKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EdDSA", "BC");
+            KeyFactory keyFactory = KeyFactory.getInstance("EdDSA");
+
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+            X509EncodedKeySpec publicKeySpec = keyFactory.getKeySpec(keyPair.getPublic(), X509EncodedKeySpec.class);
+            PKCS8EncodedKeySpec privateKeySpec = keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
+
+            return com.may.core.domain.EdDSASecretKey.builder()
+                    .publicKey(keyPair.getPublic())
+                    .publicKeyStr(Base64.getEncoder().encodeToString(publicKeySpec.getEncoded()))
+                    .privateKey(keyPair.getPrivate())
+                    .privateKeyStr(Base64.getEncoder().encodeToString(privateKeySpec.getEncoded()))
+                    .build();
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            throw new EncryptionException("EdDSA演算法或BC Provider在當前環境中不可用", e);
+        } catch (InvalidKeySpecException e) {
+            throw new EncryptionException("EdDSA密鑰規範無效", e);
+        }
+    }
+
+    /**
+     * <!-- 生成安全的随机盐值 -->
+     *
+     * @param length 盐值长度（字节）
+     * @return Base64 编码的盐值
+     */
+    public static String generateSalt(int length) {
+        try {
+            byte[] salt = new byte[length];
+            SecureRandom.getInstanceStrong().nextBytes(salt);
+            return Base64.getEncoder().encodeToString(salt);
+        } catch (NoSuchAlgorithmException e) {
+            throw new EncryptionException("安全随机数生成器不可用", e);
+        }
+    }
+
 }

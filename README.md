@@ -345,6 +345,19 @@ encryption:
 
 ## 更新记录
 
+### 2026-03-12
+- 新增数字签名功能：RSA签名/验签（signByRSA/verifyByRSA）
+- 新增数字签名功能：ECC(ECDSA)签名/验签（signByECC/verifyByECC）
+- 新增数字签名功能：EdDSA(Ed25519)签名/验签（signByEdDSA/verifyByEdDSA）
+- 新增PBKDF2密钥派生功能（deriveKeyByPBKDF2），支持自定义迭代次数和密钥长度
+- 新增公钥指纹功能（getPublicKeyFingerprint），使用SHA-256生成密钥指纹
+- 新增SHA-224哈希算法支持（encryptSHA224/verifySHA224）
+- 新增SHA-384哈希算法支持（encryptSHA384/verifySHA384）
+- 新增SHA3-256哈希算法支持（encryptSHA3_256/verifySHA3_256）
+- SecretKeyUtil新增EdDSA密钥对生成方法（generateEdDSAKeyPair）
+- SecretKeyUtil新增随机盐值生成方法（generateSalt）
+- 优化SM4加密使用标准GCMParameterSpec，提升兼容性
+
 ### 2026-03-11
 - 新增SM2国密非对称加密算法支持（encryptBySM2/decryptBySM2）
 - 新增SM4国密对称加密算法支持（encryptBySM4/decryptBySM4）

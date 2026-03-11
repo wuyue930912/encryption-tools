@@ -9,7 +9,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SM4ParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -174,7 +174,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             SecureRandom.getInstanceStrong().nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(128, iv));
 
             byte[] cipherText = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
@@ -202,7 +202,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             byteBuffer.get(cipherText);
 
             Cipher cipher = Cipher.getInstance(SM4_ALGORITHM, "BC");
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, new SM4ParameterSpec(iv));
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(128, iv));
 
             byte[] plainText = cipher.doFinal(cipherText);
             return new String(plainText, StandardCharsets.UTF_8);
@@ -520,6 +520,269 @@ public class EncryptionServiceImpl implements EncryptionService {
         if (input == null || input.isEmpty()) {
             throw new EncryptionException(algorithm + "輸入不能為空");
         }
+    }
+
+    // ==================== 数字签名 - RSA ====================
+
+    private static final String RSA_SIGNATURE_ALGORITHM = "SHA256withRSA";
+    private static final String ECDSA_SIGNATURE_ALGORITHM = "SHA256withECDSA";
+    private static final String EDDSA_SIGNATURE_ALGORITHM = "EdDSA";
+
+    @Override
+    public String signByRSA(String privateKey, String data) {
+        return doRSASign(privateKey, data);
+    }
+
+    @Override
+    public String signByRSA(String data) {
+        String privateKey = properties.getRSAPrivateKey();
+        if (privateKey == null || privateKey.isEmpty()) {
+            throw new EncryptionException("未配置RSA私鑰，請在配置文件中設置 encryption.tool.RSAPrivateKey");
+        }
+        return doRSASign(privateKey, data);
+    }
+
+    private String doRSASign(String privateKeyStr, String data) {
+        validateInput(data, "RSA签名");
+        try {
+            PrivateKey privateKey = decodeRSAPrivateKey(privateKeyStr);
+            Signature signature = Signature.getInstance(RSA_SIGNATURE_ALGORITHM);
+            signature.initSign(privateKey);
+            signature.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signBytes = signature.sign();
+            return Base64.getEncoder().encodeToString(signBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("RSA私鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("RSA簽名失敗", e);
+        }
+    }
+
+    @Override
+    public Boolean verifyByRSA(String publicKey, String data, String signature) {
+        return doRSAVerify(publicKey, data, signature);
+    }
+
+    @Override
+    public Boolean verifyByRSA(String data, String signature) {
+        String publicKey = properties.getRSAPublicKey();
+        if (publicKey == null || publicKey.isEmpty()) {
+            throw new EncryptionException("未配置RSA公鑰，請在配置文件中設置 encryption.tool.RSAPublicKey");
+        }
+        return doRSAVerify(publicKey, data, signature);
+    }
+
+    private Boolean doRSAVerify(String publicKeyStr, String data, String signatureStr) {
+        validateInput(data, "RSA验签");
+        validateInput(signatureStr, "RSA签名");
+        try {
+            PublicKey publicKey = decodeRSAPublicKey(publicKeyStr);
+            Signature signature = Signature.getInstance(RSA_SIGNATURE_ALGORITHM);
+            signature.initVerify(publicKey);
+            signature.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signatureBytes = Base64.getDecoder().decode(signatureStr);
+            return signature.verify(signatureBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("RSA公鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("RSA驗簽失敗", e);
+        }
+    }
+
+    // ==================== 数字签名 - ECC ====================
+
+    @Override
+    public String signByECC(String privateKey, String data) {
+        return doECCSign(privateKey, data);
+    }
+
+    @Override
+    public String signByECC(String data) {
+        String privateKey = properties.getECCPrivateKey();
+        if (privateKey == null || privateKey.isEmpty()) {
+            throw new EncryptionException("未配置ECC私鑰，請在配置文件中設置 encryption.tool.ECCPrivateKey");
+        }
+        return doECCSign(privateKey, data);
+    }
+
+    private String doECCSign(String privateKeyStr, String data) {
+        validateInput(data, "ECC签名");
+        try {
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyStr);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance(EC_ALGORITHM);
+            PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+
+            Signature signature = Signature.getInstance(ECDSA_SIGNATURE_ALGORITHM);
+            signature.initSign(privateKey);
+            signature.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signBytes = signature.sign();
+            return Base64.getEncoder().encodeToString(signBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("ECC私鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("ECC簽名失敗", e);
+        }
+    }
+
+    @Override
+    public Boolean verifyByECC(String publicKey, String data, String signature) {
+        return doECCVerify(publicKey, data, signature);
+    }
+
+    @Override
+    public Boolean verifyByECC(String data, String signature) {
+        String publicKey = properties.getECCPublicKey();
+        if (publicKey == null || publicKey.isEmpty()) {
+            throw new EncryptionException("未配置ECC公鑰，請在配置文件中設置 encryption.tool.ECCPublicKey");
+        }
+        return doECCVerify(publicKey, data, signature);
+    }
+
+    private Boolean doECCVerify(String publicKeyStr, String data, String signatureStr) {
+        validateInput(data, "ECC验签");
+        validateInput(signatureStr, "ECC签名");
+        try {
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance(EC_ALGORITHM);
+            PublicKey publicKey = keyFactory.generatePublic(keySpec);
+
+            Signature signature = Signature.getInstance(ECDSA_SIGNATURE_ALGORITHM);
+            signature.initVerify(publicKey);
+            signature.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signatureBytes = Base64.getDecoder().decode(signatureStr);
+            return signature.verify(signatureBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("ECC公鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("ECC驗簽失敗", e);
+        }
+    }
+
+    // ==================== 数字签名 - EdDSA ====================
+
+    @Override
+    public String signByEdDSA(String privateKey, String data) {
+        validateInput(data, "EdDSA签名");
+        validateInput(privateKey, "EdDSA私钥");
+        try {
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKey);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance(EDDSA_SIGNATURE_ALGORITHM);
+            PrivateKey privKey = keyFactory.generatePrivate(keySpec);
+
+            Signature signature = Signature.getInstance(EDDSA_SIGNATURE_ALGORITHM);
+            signature.initSign(privKey);
+            signature.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signBytes = signature.sign();
+            return Base64.getEncoder().encodeToString(signBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("EdDSA私鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("EdDSA簽名失敗", e);
+        }
+    }
+
+    @Override
+    public Boolean verifyByEdDSA(String publicKey, String data, String signature) {
+        validateInput(data, "EdDSA验签");
+        validateInput(signature, "EdDSA签名");
+        validateInput(publicKey, "EdDSA公钥");
+        try {
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKey);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance(EDDSA_SIGNATURE_ALGORITHM);
+            PublicKey pubKey = keyFactory.generatePublic(keySpec);
+
+            Signature sig = Signature.getInstance(EDDSA_SIGNATURE_ALGORITHM);
+            sig.initVerify(pubKey);
+            sig.update(data.getBytes(StandardCharsets.UTF_8));
+            byte[] signatureBytes = Base64.getDecoder().decode(signature);
+            return sig.verify(signatureBytes);
+        } catch (InvalidKeyException e) {
+            throw new EncryptionException("EdDSA公鑰無效", e);
+        } catch (Exception e) {
+            throw new EncryptionException("EdDSA驗簽失敗", e);
+        }
+    }
+
+    // ==================== PBKDF2 密钥派生 ====================
+
+    private static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final int DEFAULT_PBKDF2_ITERATIONS = 100000;
+    private static final int DEFAULT_PBKDF2_KEY_LENGTH = 32;
+
+    @Override
+    public String deriveKeyByPBKDF2(String password, String salt, int iterations, int keyLength) {
+        validateInput(password, "PBKDF2");
+        validateInput(salt, "PBKDF2盐值");
+        if (iterations <= 0) {
+            throw new EncryptionException("PBKDF2迭代次數必須大於0");
+        }
+        if (keyLength <= 0) {
+            throw new EncryptionException("PBKDF2密鑰長度必須大於0");
+        }
+        try {
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
+            PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt.getBytes(StandardCharsets.UTF_8), iterations, keyLength * 8);
+            byte[] key = keyFactory.generateSecret(spec).getEncoded();
+            return Base64.getEncoder().encodeToString(key);
+        } catch (Exception e) {
+            throw new EncryptionException("PBKDF2密鑰派生失敗", e);
+        }
+    }
+
+    @Override
+    public String deriveKeyByPBKDF2(String password, String salt) {
+        return deriveKeyByPBKDF2(password, salt, DEFAULT_PBKDF2_ITERATIONS, DEFAULT_PBKDF2_KEY_LENGTH);
+    }
+
+    // ==================== 密钥指纹 ====================
+
+    @Override
+    public String getPublicKeyFingerprint(String publicKey) {
+        validateInput(publicKey, "公钥指纹");
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(publicKey);
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(keyBytes);
+            return bytesToHex(hash);
+        } catch (Exception e) {
+            throw new EncryptionException("公鑰指紋生成失敗", e);
+        }
+    }
+
+    // ==================== 额外哈希算法 ====================
+
+    @Override
+    public String encryptSHA224(String str) {
+        return doHash("SHA-224", str, null);
+    }
+
+    @Override
+    public Boolean verifySHA224(String encryptedStr, String str) {
+        return verifyHash("SHA-224", encryptedStr, str, null);
+    }
+
+    @Override
+    public String encryptSHA384(String str) {
+        return doHash("SHA-384", str, null);
+    }
+
+    @Override
+    public Boolean verifySHA384(String encryptedStr, String str) {
+        return verifyHash("SHA-384", encryptedStr, str, null);
+    }
+
+    @Override
+    public String encryptSHA3_256(String str) {
+        return doHash("SHA3-256", str, null);
+    }
+
+    @Override
+    public Boolean verifySHA3_256(String encryptedStr, String str) {
+        return verifyHash("SHA3-256", encryptedStr, str, null);
     }
 
 }
