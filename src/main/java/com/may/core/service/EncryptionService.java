@@ -394,4 +394,201 @@ public interface EncryptionService {
      */
     Boolean verifyHash(String algorithm, String encryptedStr, String str, String salt);
 
+    // ==================== 数字签名 ====================
+
+    /**
+     * <!-- 使用RSA私钥签名 -->
+     * <p>
+     * RSA数字签名是一种基于RSA算法的数字签名方案，用于验证数据的完整性和来源。
+     * </p>
+     *
+     * @param privateKey  RSA私钥（Base64编码）
+     * @param data        要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByRSA(String privateKey, String data);
+
+    /**
+     * <!-- 使用配置文件中RSA私钥签名 -->
+     *
+     * @param data 要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByRSA(String data);
+
+    /**
+     * <!-- 使用RSA公钥验签 -->
+     *
+     * @param publicKey     RSA公钥（Base64编码）
+     * @param data          原始数据
+     * @param signature     签名（Base64编码）
+     * @return 验签结果
+     */
+    Boolean verifyByRSA(String publicKey, String data, String signature);
+
+    /**
+     * <!-- 使用配置文件中RSA公钥验签 -->
+     *
+     * @param data      原始数据
+     * @param signature 签名（Base64编码）
+     * @return 验签结果
+     */
+    Boolean verifyByRSA(String data, String signature);
+
+    /**
+     * <!-- 使用ECC私钥签名 -->
+     * <p>
+     * ECDSA（Elliptic Curve Digital Signature Algorithm）是一种基于椭圆曲线的数字签名算法。
+     * </p>
+     *
+     * @param privateKey ECC私钥（Base64编码）
+     * @param data       要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByECC(String privateKey, String data);
+
+    /**
+     * <!-- 使用配置文件中ECC私钥签名 -->
+     *
+     * @param data 要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByECC(String data);
+
+    /**
+     * <!-- 使用ECC公钥验签 -->
+     *
+     * @param publicKey     ECC公钥（Base64编码）
+     * @param data          原始数据
+     * @param signature     签名（Base64编码）
+     * @return 验签结果
+     */
+    Boolean verifyByECC(String publicKey, String data, String signature);
+
+    /**
+     * <!-- 使用配置文件中ECC公钥验签 -->
+     *
+     * @param data      原始数据
+     * @param signature 签名（Base64编码）
+     * @return 验签结果
+     */
+    Boolean verifyByECC(String data, String signature);
+
+    /**
+     * <!-- 使用EdDSA (Ed25519) 私钥签名 -->
+     * <p>
+     * EdDSA是一种现代化的数字签名算法，基于Edwards曲线，具有高性能和高安全性。
+     * </p>
+     *
+     * @param privateKey EdDSA私钥（Base64编码）
+     * @param data       要签名的数据
+     * @return 签名结果（Base64编码）
+     */
+    String signByEdDSA(String privateKey, String data);
+
+    /**
+     * <!-- 使用EdDSA (Ed25519) 公钥验签 -->
+     *
+     * @param publicKey     EdDSA公钥（Base64编码）
+     * @param data          原始数据
+     * @param signature     签名（Base64编码）
+     * @return 验签结果
+     */
+    Boolean verifyByEdDSA(String publicKey, String data, String signature);
+
+    // ==================== PBKDF2 密钥派生 ====================
+
+    /**
+     * <!-- 使用PBKDF2派生密钥 -->
+     * <p>
+     * PBKDF2（Password-Based Key Derivation Function 2）是一种密钥派生函数，
+     * 用于从密码生成安全的加密密钥，通过多次迭代增加破解难度。
+     * </p>
+     *
+     * @param password   密码
+     * @param salt       盐值（建议至少8字节）
+     * @param iterations 迭代次数（建议至少100000）
+     * @param keyLength  派生密钥长度（字节）
+     * @return 派生密钥（Base64编码）
+     */
+    String deriveKeyByPBKDF2(String password, String salt, int iterations, int keyLength);
+
+    /**
+     * <!-- 使用默认参数的PBKDF2派生密钥 -->
+     * <p>
+     * 默认参数：迭代次数100000，密钥长度32字节
+     * </p>
+     *
+     * @param password 密码
+     * @param salt     盐值
+     * @return 派生密钥（Base64编码）
+     */
+    String deriveKeyByPBKDF2(String password, String salt);
+
+    // ==================== 密钥指纹 ====================
+
+    /**
+     * <!-- 生成公钥指纹（SHA-256） -->
+     * <p>
+     * 用于快速识别和验证公钥。
+     * </p>
+     *
+     * @param publicKey 公钥（Base64编码）
+     * @return 公钥指纹（Hex编码）
+     */
+    String getPublicKeyFingerprint(String publicKey);
+
+    // ==================== 额外哈希算法 ====================
+
+    /**
+     * <!-- 使用SHA-224加密 -->
+     *
+     * @param str 要加密的字符串
+     * @return 加密后的字符串
+     */
+    String encryptSHA224(String str);
+
+    /**
+     * <!-- 校验SHA-224加密的字符 -->
+     *
+     * @param encryptedStr 加密后的数据
+     * @param str          要校验的数据
+     * @return 校验结果
+     */
+    Boolean verifySHA224(String encryptedStr, String str);
+
+    /**
+     * <!-- 使用SHA-384加密 -->
+     *
+     * @param str 要加密的字符串
+     * @return 加密后的字符串
+     */
+    String encryptSHA384(String str);
+
+    /**
+     * <!-- 校验SHA-384加密的字符 -->
+     *
+     * @param encryptedStr 加密后的数据
+     * @param str          要校验的数据
+     * @return 校验结果
+     */
+    Boolean verifySHA384(String encryptedStr, String str);
+
+    /**
+     * <!-- 使用SHA3-256加密 -->
+     *
+     * @param str 要加密的字符串
+     * @return 加密后的字符串
+     */
+    String encryptSHA3_256(String str);
+
+    /**
+     * <!-- 校验SHA3-256加密的字符 -->
+     *
+     * @param encryptedStr 加密后的数据
+     * @param str          要校验的数据
+     * @return 校验结果
+     */
+    Boolean verifySHA3_256(String encryptedStr, String str);
+
 }
